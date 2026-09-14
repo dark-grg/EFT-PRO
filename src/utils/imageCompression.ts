@@ -15,8 +15,8 @@ export interface CompressedImageResult {
 }
 
 const SUPPORTED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-const MAX_DIMENSION = 1280;
-const COMPRESSION_QUALITY = 0.85;
+const MAX_DIMENSION = 2048;
+const COMPRESSION_QUALITY = 0.95;
 
 export async function compressImageFile(file: File): Promise<CompressedImageResult> {
   if (!file) {

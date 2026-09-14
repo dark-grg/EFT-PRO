@@ -250,6 +250,7 @@ app.post("/api/analyze-formation", async (req, res) => {
       isFormationScreenshot,
       isReliable,
       unreliableReason,
+      gameName: typeof parsedData?.gameName === "string" && parsedData.gameName.trim() ? parsedData.gameName.trim() : null,
       formationName,
       tacticalRating,
       detectedPlayers,
@@ -260,6 +261,15 @@ app.post("/api/analyze-formation", async (req, res) => {
       weaknesses: Array.isArray(parsedData?.weaknesses) ? parsedData.weaknesses.filter((w) => typeof w === "string" && w.trim()) : [],
       tacticalAdvice: Array.isArray(parsedData?.tacticalAdvice) ? parsedData.tacticalAdvice.filter((a) => typeof a === "string" && a.trim()) : Array.isArray(parsedData?.advice) ? parsedData.advice.filter((a) => typeof a === "string" && a.trim()) : []
     };
+    if (!canonicalResponse.isFormationScreenshot) {
+      canonicalResponse.isReliable = false;
+      canonicalResponse.unreliableReason = canonicalResponse.unreliableReason || "\u0627\u0644\u0635\u0648\u0631\u0629 \u0627\u0644\u0645\u0631\u0641\u0648\u0639\u0629 \u0644\u064A\u0633\u062A \u0644\u0642\u0637\u0629 \u0634\u0627\u0634\u0629 \u0644\u062A\u0634\u0643\u064A\u0644\u0629 \u0643\u0631\u0629 \u0642\u062F\u0645 \u0635\u0627\u0644\u062D\u0629.";
+    }
+    if (!Array.isArray(canonicalResponse.detectedPlayers) || canonicalResponse.detectedPlayers.length === 0) {
+      canonicalResponse.isReliable = false;
+      canonicalResponse.unreliableReason = "\u0644\u0645 \u064A\u062A\u0645 \u0627\u0644\u062A\u0639\u0631\u0641 \u0639\u0644\u0649 \u0623\u064A \u0644\u0627\u0639\u0628 \u0645\u0646 \u0627\u0644\u0635\u0648\u0631\u0629";
+      canonicalResponse.detectedPlayers = [];
+    }
     res.json(canonicalResponse);
   } catch (error) {
     console.error("Error analyzing formation image:", error);

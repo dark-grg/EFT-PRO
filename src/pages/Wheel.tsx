@@ -259,10 +259,10 @@ export const Wheel: React.FC = () => {
 
       // DEFENSIVE PRIZE RESOLUTION:
       // Look up prize strictly by authoritative server prizeId
-      const targetIndex = prizes.findIndex(p => p.id === spinResult.prizeId);
+      let targetIndex = prizes.findIndex(p => p.id === spinResult.prizeId);
 
       if (targetIndex < 0 || !Number.isFinite(targetIndex)) {
-        throw new Error('الجائزة التي أعادها الخادم غير موجودة في قائمة العجلة.');
+        console.warn(`Prize ID ${spinResult.prizeId} not found, falling back`); targetIndex = prizes.findIndex(p => p.id === 'better_luck'); if (targetIndex < 0) targetIndex = prizes.length - 1;
       }
 
       const selected = prizes[targetIndex];

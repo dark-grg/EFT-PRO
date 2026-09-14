@@ -44,5 +44,10 @@
 
     <queries>
         <package android:name="jp.konami.pesam" />
+        <package android:name="jp.konami.pesactionmobile" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="pesmobile" />
+        </intent>
     </queries>
 </manifest>
