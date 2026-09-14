@@ -7,6 +7,10 @@ coverage/
 .env*
 !.env.example
 
+# Bun lockfiles (Project strictly uses npm)
+bun.lock
+bun.lockb
+
 # Android specific
 android/.gradle/
 android/local.properties
