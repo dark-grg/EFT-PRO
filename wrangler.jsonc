@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "pes-arena-api",
+  "name": "eft-pro",
   "main": "worker/index.ts",
   "compatibility_date": "2024-09-23",
   "compatibility_flags": [
@@ -17,7 +17,7 @@
   "migrations": [
     {
       "tag": "v1",
-      "new_classes": [
+      "new_sqlite_classes": [
         "WheelDurableObject"
       ]
     }
