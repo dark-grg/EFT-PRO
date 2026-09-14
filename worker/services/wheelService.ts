@@ -1,122 +1,259 @@
-import { Env, WheelRecord } from '../types';
+import { Env, WheelRecord, WheelState } from '../types';
+import { 
+  DEFAULT_PRIZES, 
+  PrizeOption, 
+  selectWeightedPrize, 
+  COOLDOWN_24H_MS 
+} from '../durable-objects/WheelDurableObject';
 
-// In-memory fallback for local dev or when KV is not configured
-const inMemoryWheelStore = new Map<string, WheelRecord>();
-const activeSpinLocks = new Set<string>();
-
-export async function getWheelRecord(env: Env, deviceId: string): Promise<WheelRecord | null> {
-  if (!deviceId) return null;
-
-  if (env.WHEEL_STORE) {
-    try {
-      const data = await env.WHEEL_STORE.get(`wheel_${deviceId}`, 'json');
-      if (data) return data as WheelRecord;
-    } catch {
-      // fallback
-    }
-  }
-
-  return inMemoryWheelStore.get(deviceId) || null;
-}
-
-export async function saveWheelRecord(env: Env, deviceId: string, record: WheelRecord): Promise<void> {
-  if (!deviceId) return;
-
-  if (env.WHEEL_STORE) {
-    try {
-      // Store with 30 days TTL (2592000 seconds)
-      await env.WHEEL_STORE.put(`wheel_${deviceId}`, JSON.stringify(record), {
-        expirationTtl: 2592000
-      });
-    } catch {
-      // fallback
-    }
-  }
-
-  inMemoryWheelStore.set(deviceId, record);
-}
+// In-memory persistent state for fallback execution environments
+const localDurableStore = new Map<string, WheelState>();
+const localIdempStore = new Map<string, any>();
+const localDeviceQueues = new Map<string, Promise<any>>();
 
 export interface SpinResult {
+  ok: boolean;
   success: boolean;
   prizeIndex: number;
   prizeId: string;
   nextSpinAt: number;
+  nextSpinAtIso?: string;
   serverTime: number;
+  idempotent?: boolean;
 }
 
-export async function executeSpin(env: Env, deviceId: string): Promise<SpinResult> {
+export interface WheelStatusResult {
+  ok?: boolean;
+  canSpin: boolean;
+  lastSpinAt: number | null;
+  nextSpinAt: number | null;
+  nextSpinAtIso?: string | null;
+  serverTime: number;
+  remainingMs: number;
+}
+
+/**
+ * Retrieves Wheel Status for a given deviceId via Durable Object
+ */
+export async function getWheelStatus(env: Env, deviceId: string): Promise<WheelStatusResult> {
+  const now = Date.now();
   if (!deviceId) {
-    throw new Error('Missing deviceId parameter');
+    return {
+      canSpin: true,
+      lastSpinAt: null,
+      nextSpinAt: null,
+      serverTime: now,
+      remainingMs: 0
+    };
   }
 
-  if (activeSpinLocks.has(deviceId)) {
-    const error: any = new Error('Spin already in progress. Please wait.');
-    error.status = 429;
+  // 1. Primary: Use Cloudflare Durable Object instance
+  if (env.WHEEL_DO) {
+    try {
+      const doId = env.WHEEL_DO.idFromName(deviceId);
+      const stub = env.WHEEL_DO.get(doId);
+      const res = await stub.fetch('http://wheel-do/status');
+      if (res.ok) {
+        return (await res.json()) as WheelStatusResult;
+      }
+    } catch (err) {
+      console.warn('Durable Object status fetch fallback:', err);
+    }
+  }
+
+  // 2. Fallback using KV if available
+  if (env.WHEEL_STORE) {
+    try {
+      const kvData = await env.WHEEL_STORE.get(`wheel_${deviceId}`, 'json') as WheelRecord | null;
+      if (kvData && kvData.nextSpinAt) {
+        const remainingMs = Math.max(0, kvData.nextSpinAt - now);
+        return {
+          canSpin: remainingMs <= 0,
+          lastSpinAt: kvData.lastSpinAt,
+          nextSpinAt: kvData.nextSpinAt,
+          nextSpinAtIso: new Date(kvData.nextSpinAt).toISOString(),
+          serverTime: now,
+          remainingMs
+        };
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // 3. In-memory fallback
+  const localState = localDurableStore.get(deviceId);
+  if (!localState || !localState.nextSpinAt) {
+    return {
+      canSpin: true,
+      lastSpinAt: null,
+      nextSpinAt: null,
+      serverTime: now,
+      remainingMs: 0
+    };
+  }
+
+  const remainingMs = Math.max(0, localState.nextSpinAt - now);
+  return {
+    canSpin: remainingMs <= 0,
+    lastSpinAt: localState.lastSpinAt,
+    nextSpinAt: localState.nextSpinAt,
+    nextSpinAtIso: new Date(localState.nextSpinAt).toISOString(),
+    serverTime: now,
+    remainingMs
+  };
+}
+
+/**
+ * Atomically executes a Spin through the Device's Durable Object
+ */
+export async function executeSpin(
+  env: Env, 
+  deviceId: string, 
+  options: { 
+    idempotencyKey?: string | null; 
+    prizes?: PrizeOption[];
+    originRequest?: Request;
+  } = {}
+): Promise<SpinResult> {
+  if (!deviceId || typeof deviceId !== 'string' || !deviceId.trim()) {
+    const error: any = new Error('Missing or invalid deviceId parameter');
+    error.status = 400;
     throw error;
   }
 
-  activeSpinLocks.add(deviceId);
-  try {
-    const now = Date.now();
-    const existing = await getWheelRecord(env, deviceId);
+  const trimmedDeviceId = deviceId.trim();
 
-    if (existing && existing.nextSpinAt && now < existing.nextSpinAt) {
-      const remainingMs = existing.nextSpinAt - now;
-      const error: any = new Error('مسموح بلفة واحدة كل 24 ساعة فقط.');
+  // 1. Primary: Delegate directly to Cloudflare Durable Object for this deviceId
+  if (env.WHEEL_DO) {
+    const doId = env.WHEEL_DO.idFromName(trimmedDeviceId);
+    const stub = env.WHEEL_DO.get(doId);
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+
+    if (options.idempotencyKey) {
+      headers['Idempotency-Key'] = options.idempotencyKey;
+    }
+
+    const response = await stub.fetch('http://wheel-do/spin', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        deviceId: trimmedDeviceId,
+        idempotencyKey: options.idempotencyKey,
+        prizes: options.prizes
+      })
+    });
+
+    const data: any = await response.json().catch(() => ({}));
+
+    if (response.status === 429) {
+      const error: any = new Error(data?.error || data?.message || 'مسموح بلفة واحدة كل 24 ساعة فقط.');
       error.status = 429;
-      error.remainingMs = remainingMs;
+      error.code = 'COOLDOWN';
+      error.remainingMs = data?.remainingMs;
+      error.nextSpinAt = data?.nextSpinAt;
+      error.nextSpinAtTimestamp = data?.nextSpinAtTimestamp;
+      error.serverTime = data?.serverTime || Date.now();
       throw error;
     }
 
-    // Weighted Random Configuration
-    // 0: suarez (1%)
-    // 1: coins_150 (1%)
-    // 2: ipad_prize (0%)
-    // 3: casillas (1%)
-    // 4: better_luck (97%)
-    const prizes = [
-      { id: 'suarez', weight: 1, index: 0 },
-      { id: 'coins_150', weight: 1, index: 1 },
-      { id: 'ipad_prize', weight: 0, index: 2 },
-      { id: 'casillas', weight: 1, index: 3 },
-      { id: 'better_luck', weight: 97, index: 4 }
-    ];
-
-    const totalWeight = prizes.reduce((acc, p) => acc + p.weight, 0);
-    if (totalWeight <= 0) {
-      throw new Error('Wheel configuration invalid: total weight must be > 0');
+    if (!response.ok) {
+      const error: any = new Error(data?.error || 'Failed to execute spin');
+      error.status = response.status;
+      error.code = data?.code || 'SPIN_ERROR';
+      throw error;
     }
 
-    const rand = Math.random() * totalWeight;
-    let accumulated = 0;
-    let selectedPrize = prizes[prizes.length - 1];
+    // Also mirror to KV for backup query speed if KV namespace is attached
+    if (env.WHEEL_STORE && data?.nextSpinAt) {
+      env.WHEEL_STORE.put(`wheel_${trimmedDeviceId}`, JSON.stringify({
+        lastSpinAt: data.serverTime,
+        nextSpinAt: data.nextSpinAt,
+        lastPrizeId: data.prizeId,
+        lastPrizeIndex: data.prizeIndex
+      }), { expirationTtl: 2592000 }).catch(() => {});
+    }
 
-    for (const p of prizes) {
-      accumulated += p.weight;
-      if (rand < accumulated) {
-        selectedPrize = p;
-        break;
+    return data as SpinResult;
+  }
+
+  // 2. Fallback Sequential Promise Queue per deviceId (replicates DO atomic serialization in test/dev)
+  const currentQueue = localDeviceQueues.get(trimmedDeviceId) || Promise.resolve();
+  
+  const execution = currentQueue.then(async () => {
+    const now = Date.now();
+
+    // Idempotency check
+    if (options.idempotencyKey) {
+      const cached = localIdempStore.get(options.idempotencyKey);
+      if (cached) {
+        return {
+          ...cached,
+          idempotent: true,
+          serverTime: now
+        };
       }
     }
 
-    const COOLDOWN_24H_MS = 24 * 60 * 60 * 1000;
+    const existing = localDurableStore.get(trimmedDeviceId);
+    if (existing && existing.nextSpinAt && now < existing.nextSpinAt) {
+      const remainingMs = existing.nextSpinAt - now;
+      const nextSpinAtIso = new Date(existing.nextSpinAt).toISOString();
+      const error: any = new Error('مسموح بلفة واحدة كل 24 ساعة فقط.');
+      error.status = 429;
+      error.code = 'COOLDOWN';
+      error.remainingMs = remainingMs;
+      error.nextSpinAt = nextSpinAtIso;
+      error.nextSpinAtTimestamp = existing.nextSpinAt;
+      error.serverTime = now;
+      throw error;
+    }
+
+    // Weighted selection
+    const selectedPrize = selectWeightedPrize(options.prizes || DEFAULT_PRIZES);
     const nextSpinAt = now + COOLDOWN_24H_MS;
 
-    const record: WheelRecord = {
+    const newState: WheelState = {
+      deviceId: trimmedDeviceId,
       lastSpinAt: now,
-      nextSpinAt
+      nextSpinAt,
+      lastPrizeId: selectedPrize.id,
+      lastPrizeIndex: selectedPrize.index,
+      updatedAt: now
     };
 
-    await saveWheelRecord(env, deviceId, record);
+    localDurableStore.set(trimmedDeviceId, newState);
 
-    return {
+    const result: SpinResult = {
+      ok: true,
       success: true,
       prizeIndex: selectedPrize.index,
       prizeId: selectedPrize.id,
       nextSpinAt,
+      nextSpinAtIso: new Date(nextSpinAt).toISOString(),
       serverTime: now
     };
-  } finally {
-    activeSpinLocks.delete(deviceId);
-  }
+
+    if (options.idempotencyKey) {
+      localIdempStore.set(options.idempotencyKey, result);
+    }
+
+    return result;
+  });
+
+  localDeviceQueues.set(trimmedDeviceId, execution.catch(() => {}));
+  return await execution;
+}
+
+// Retain legacy method for backward compatibility
+export async function getWheelRecord(env: Env, deviceId: string): Promise<WheelRecord | null> {
+  const status = await getWheelStatus(env, deviceId);
+  if (!status.lastSpinAt || !status.nextSpinAt) return null;
+  return {
+    lastSpinAt: status.lastSpinAt,
+    nextSpinAt: status.nextSpinAt
+  };
 }

@@ -126,8 +126,13 @@ export const Wheel: React.FC = () => {
   ]);
   const [showHistory, setShowHistory] = useState<boolean>(false);
 
-  // Live 24h countdown timer
+  // Live 24h countdown timer & Server Sync
   useEffect(() => {
+    // Initial fetch from authoritative server
+    WheelService.fetchServerStatus().then(() => {
+      setCooldown(WheelService.getCooldownStatus());
+    }).catch(() => {});
+
     const update = () => {
       setCooldown(WheelService.getCooldownStatus());
     };

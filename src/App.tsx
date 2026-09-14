@@ -26,10 +26,18 @@ function AppContent() {
   useAndroidBackButton();
 
   return (
-    <div className="min-h-screen pb-24 bg-background relative overflow-x-hidden">
-      {/* Background Gradients */}
-      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px] pointer-events-none" />
+    <div className="min-h-screen pb-24 bg-[#050B14] relative overflow-x-hidden">
+      {/* 2D Static EFT PRO Production Background */}
+      <div 
+        className="fixed inset-0 pointer-events-none -z-20 bg-cover bg-center bg-no-repeat opacity-40"
+        style={{
+          backgroundImage: "url('/eft_pro_background.svg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      />
+      {/* Dark Subtle Vignette & Contrast Overlay */}
+      <div className="fixed inset-0 pointer-events-none -z-10 bg-gradient-to-b from-[#050B14]/80 via-[#050B14]/70 to-[#050B14]/90" />
       
       <TopBar />
       

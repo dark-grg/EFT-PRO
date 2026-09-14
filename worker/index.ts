@@ -1,5 +1,5 @@
 /**
- * PES ARENA — Cloudflare Workers Main Entry Point
+ * EFT PRO — Cloudflare Workers Main Entry Point
  */
 
 import { Env } from './types';
@@ -8,6 +8,9 @@ import { jsonResponse, errorResponse } from './utils/response';
 import { handleAnalyzeFormation } from './routes/formation';
 import { handleGetTime, handleGetWheelStatus, handlePostWheelSpin } from './routes/wheel';
 import { handleGetPlayerCards, handlePostEfhubParse, handlePostResyncPlayers } from './routes/players';
+
+// Export Durable Object class for Cloudflare Worker runtime binding
+export { WheelDurableObject } from './durable-objects/WheelDurableObject';
 
 export default {
   async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
@@ -24,8 +27,9 @@ export default {
       if (pathname === '/api/health' || pathname === '/health') {
         return jsonResponse({
           ok: true,
-          service: 'pes-arena-api',
+          service: 'eft-pro-api',
           runtime: 'cloudflare-workers',
+          durableObjects: !!env.WHEEL_DO,
           timestamp: new Date().toISOString()
         }, 200, request);
       }
@@ -91,8 +95,8 @@ export default {
       // Default root health response
       return jsonResponse({
         ok: true,
-        service: 'pes-arena-api',
-        message: 'PES ARENA Cloudflare Worker API is active and ready.'
+        service: 'eft-pro-api',
+        message: 'EFT PRO Cloudflare Worker API is active and ready.'
       }, 200, request);
     } catch (err: any) {
       console.error('Unhandled Worker Error:', err);

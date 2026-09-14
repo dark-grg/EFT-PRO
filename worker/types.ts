@@ -6,17 +6,31 @@ export interface Env {
   // Cloudflare Worker Secret for Gemini API
   GEMINI_API_KEY?: string;
 
-  // Optional Cloudflare KV Namespace for Wheel and Player Storage
+  // Cloudflare KV Namespace for Wheel and Player Storage
   WHEEL_STORE?: KVNamespace;
   PLAYERS_STORE?: KVNamespace;
+
+  // Cloudflare Durable Objects binding for Atomic Concurrency & Cooldown
+  WHEEL_DO?: DurableObjectNamespace;
 
   // Environment mode
   ENVIRONMENT?: string;
 }
 
+export interface WheelState {
+  deviceId: string;
+  lastSpinAt: number;
+  nextSpinAt: number;
+  lastPrizeId?: string;
+  lastPrizeIndex?: number;
+  updatedAt?: number;
+}
+
 export interface WheelRecord {
   lastSpinAt: number;
   nextSpinAt: number;
+  lastPrizeId?: string;
+  lastPrizeIndex?: number;
 }
 
 export interface PlayerCard {

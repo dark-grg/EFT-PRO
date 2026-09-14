@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.pes.arena',
-  appName: 'PES ARENA',
+  appName: 'EFT PRO',
   webDir: 'dist',
   server: {
     androidScheme: 'https',

@@ -533,7 +533,7 @@ export class PlayerCardDatabaseService {
       statChanges: statsCalc.statChanges,
       published: devData.published ?? true,
       featured: devData.featured ?? false,
-      author: devData.author || 'PES ARENA Official',
+      author: devData.author || 'EFT PRO Official',
       createdAt: now,
       updatedAt: now
     };
@@ -957,7 +957,7 @@ export class PlayerCardDatabaseService {
         statChanges: statsCalc.statChanges,
         published: true,
         featured: conf.featured,
-        author: 'PES ARENA Pro Staff',
+        author: 'EFT PRO Staff',
         createdAt: now,
         updatedAt: now
       });

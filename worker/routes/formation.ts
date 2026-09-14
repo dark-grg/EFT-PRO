@@ -9,7 +9,7 @@ export async function handleAnalyzeFormation(request: Request, env: Env): Promis
 
   const apiKey = env.GEMINI_API_KEY;
   if (!apiKey) {
-    return errorResponse('GEMINI_API_KEY environment secret is not configured on Cloudflare Worker.', 500, request);
+    return errorResponse('خدمة تحليل التشكيلة غير مهيأة حالياً.', 500, request);
   }
 
   let body: any;

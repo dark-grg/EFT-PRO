@@ -1,51 +1,23 @@
 import { Env } from '../types';
 import { jsonResponse, errorResponse } from '../utils/response';
-import { getWheelRecord, executeSpin } from '../services/wheelService';
+import { getWheelStatus, executeSpin } from '../services/wheelService';
 
 export function handleGetTime(request: Request): Response {
+  const now = Date.now();
   return jsonResponse({
-    serverTime: Date.now(),
-    iso: new Date().toISOString()
+    ok: true,
+    serverTime: now,
+    iso: new Date(now).toISOString()
   }, 200, request);
 }
 
 export async function handleGetWheelStatus(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
-  const deviceId = url.searchParams.get('deviceId')?.trim();
-  const now = Date.now();
+  const deviceId = url.searchParams.get('deviceId')?.trim() || '';
 
-  if (!deviceId) {
-    return jsonResponse({
-      canSpin: true,
-      lastSpinAt: null,
-      nextSpinAt: null,
-      serverTime: now,
-      remainingMs: 0
-    }, 200, request);
-  }
+  const status = await getWheelStatus(env, deviceId);
 
-  const userRecord = await getWheelRecord(env, deviceId);
-
-  if (!userRecord || !userRecord.nextSpinAt) {
-    return jsonResponse({
-      canSpin: true,
-      lastSpinAt: null,
-      nextSpinAt: null,
-      serverTime: now,
-      remainingMs: 0
-    }, 200, request);
-  }
-
-  const remainingMs = Math.max(0, userRecord.nextSpinAt - now);
-  const canSpin = remainingMs <= 0;
-
-  return jsonResponse({
-    canSpin,
-    lastSpinAt: userRecord.lastSpinAt,
-    nextSpinAt: userRecord.nextSpinAt,
-    serverTime: now,
-    remainingMs
-  }, 200, request);
+  return jsonResponse(status, 200, request);
 }
 
 export async function handlePostWheelSpin(request: Request, env: Env): Promise<Response> {
@@ -57,15 +29,48 @@ export async function handlePostWheelSpin(request: Request, env: Env): Promise<R
   }
 
   const deviceId = body?.deviceId;
-  if (!deviceId || typeof deviceId !== 'string') {
-    return errorResponse('Missing deviceId parameter', 400, request);
+  if (!deviceId || typeof deviceId !== 'string' || !deviceId.trim()) {
+    return errorResponse('Missing or invalid deviceId parameter', 400, request);
   }
 
+  const idempotencyKey = 
+    request.headers.get('Idempotency-Key') || 
+    body?.idempotencyKey || 
+    null;
+
   try {
-    const result = await executeSpin(env, deviceId.trim());
+    const result = await executeSpin(env, deviceId.trim(), {
+      idempotencyKey,
+      prizes: body?.prizes,
+      originRequest: request
+    });
     return jsonResponse(result, 200, request);
   } catch (err: any) {
     const status = err?.status || 500;
+    
+    if (status === 429) {
+      return jsonResponse({
+        ok: false,
+        success: false,
+        code: 'COOLDOWN',
+        error: err?.message || 'مسموح بلفة واحدة كل 24 ساعة فقط.',
+        message: err?.message || 'مسموح بلفة واحدة كل 24 ساعة فقط.',
+        remainingMs: err?.remainingMs ?? 0,
+        nextSpinAt: err?.nextSpinAt ?? (err?.nextSpinAtTimestamp ? new Date(err.nextSpinAtTimestamp).toISOString() : ''),
+        nextSpinAtTimestamp: err?.nextSpinAtTimestamp,
+        serverTime: err?.serverTime || Date.now()
+      }, 429, request);
+    }
+
+    if (err?.code === 'CONFIGURATION_REJECTED') {
+      return jsonResponse({
+        ok: false,
+        success: false,
+        code: 'CONFIGURATION_REJECTED',
+        error: err?.message || 'Configuration rejected'
+      }, 400, request);
+    }
+
     return errorResponse(err?.message || 'Failed to execute spin', status, request, {
       remainingMs: err?.remainingMs
     });

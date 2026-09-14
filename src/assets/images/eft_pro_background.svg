@@ -1,0 +1,280 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920">
+  <defs>
+    <!-- Background Gradients -->
+    <radialGradient id="esportsBgGlow" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#3b0764" stop-opacity="0.45" />
+      <stop offset="40%" stop-color="#1e1035" stop-opacity="0.6" />
+      <stop offset="75%" stop-color="#090514" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#040208" stop-opacity="1" />
+    </radialGradient>
+
+    <linearGradient id="neonSlash" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0.9" />
+      <stop offset="50%" stop-color="#6366f1" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0" />
+    </linearGradient>
+
+    <linearGradient id="backlightGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#9333ea" stop-opacity="0.8" />
+      <stop offset="50%" stop-color="#7e22ce" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#1e1b4b" stop-opacity="0" />
+    </linearGradient>
+
+    <linearGradient id="metallicText" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="30%" stop-color="#E2E8F0" />
+      <stop offset="55%" stop-color="#94A3B8" />
+      <stop offset="70%" stop-color="#CBD5E1" />
+      <stop offset="100%" stop-color="#64748B" />
+    </linearGradient>
+
+    <linearGradient id="violetText" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#c084fc" />
+      <stop offset="50%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#7e22ce" />
+    </linearGradient>
+
+    <linearGradient id="skinTone" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8d7be" />
+      <stop offset="50%" stop-color="#e8b997" />
+      <stop offset="100%" stop-color="#cb9673" />
+    </linearGradient>
+
+    <linearGradient id="hairTexture" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a181b" />
+      <stop offset="100%" stop-color="#0b090c" />
+    </linearGradient>
+
+    <linearGradient id="silverStreak" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="50%" stop-color="#E2E8F0" />
+      <stop offset="100%" stop-color="#94A3B8" />
+    </linearGradient>
+
+    <linearGradient id="headphoneRim" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c084fc" />
+      <stop offset="50%" stop-color="#9333ea" />
+      <stop offset="100%" stop-color="#581c87" />
+    </linearGradient>
+
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="15" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <filter id="neonAura" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="25" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Base Obsidian / Charcoal Background -->
+  <rect width="1080" height="1920" fill="#05030a" />
+  <rect width="1080" height="1920" fill="url(#esportsBgGlow)" />
+
+  <!-- Diagonal Geometric Esports Slashes & Lines -->
+  <g opacity="0.35">
+    <polygon points="-100,200 400,-100 440,-80 -60,220" fill="url(#neonSlash)" />
+    <polygon points="-50,550 700,-100 740,-70 -10,580" fill="url(#neonSlash)" />
+    <polygon points="150,1100 1150,200 1180,230 180,1130" fill="url(#neonSlash)" />
+    <polygon points="-100,1400 950,450 980,480 -70,1430" fill="url(#neonSlash)" />
+    <!-- Subtle Esports Geometric Polygons -->
+    <path d="M 850 300 L 1020 400 L 980 650 L 800 550 Z" fill="#1e1035" opacity="0.4" stroke="#7e22ce" stroke-width="2" />
+    <path d="M 60 700 L 220 600 L 180 850 L 20 950 Z" fill="#1e1035" opacity="0.25" stroke="#9333ea" stroke-width="1.5" />
+  </g>
+
+  <!-- Ambient Violet Smoke / Cloud Base at Bottom -->
+  <g opacity="0.5" filter="url(#neonAura)">
+    <ellipse cx="540" cy="1700" rx="600" ry="250" fill="#581c87" opacity="0.4" />
+    <ellipse cx="300" cy="1650" rx="350" ry="200" fill="#7e22ce" opacity="0.3" />
+    <ellipse cx="780" cy="1650" rx="350" ry="200" fill="#3b0764" opacity="0.35" />
+  </g>
+
+  <!-- ================= TOP SAFE ZONE & BRANDING ================= -->
+  <!-- Crown Icon on top of EFT PRO -->
+  <g transform="translate(140, 110)">
+    <path d="M 20 50 L 5 20 L 35 32 L 65 10 L 95 32 L 125 20 L 110 50 Z" fill="#9333ea" stroke="#c084fc" stroke-width="3" filter="url(#softGlow)" />
+  </g>
+
+  <!-- EFT PRO Logo -->
+  <g transform="translate(100, 240)">
+    <!-- EFT in Metallic Brushed Style -->
+    <text x="0" y="0" font-family="'Impact', 'Arial Black', sans-serif" font-size="110" font-style="italic" font-weight="900" fill="url(#metallicText)" stroke="#0f172a" stroke-width="4" letter-spacing="2">EFT</text>
+    <!-- PRO in Neon Violet Glow -->
+    <text x="50" y="70" font-family="'Impact', 'Arial Black', sans-serif" font-size="80" font-style="italic" font-weight="900" fill="url(#violetText)" filter="url(#softGlow)" letter-spacing="4">PRO</text>
+  </g>
+
+  <!-- Tagline Top Right (Non-intrusive in safe area) -->
+  <g transform="translate(860, 180)">
+    <text x="0" y="0" font-family="'Arial', sans-serif" font-size="20" font-weight="800" fill="#cbd5e1" letter-spacing="6" text-anchor="middle" opacity="0.9">PLAY</text>
+    <text x="0" y="32" font-family="'Arial', sans-serif" font-size="20" font-weight="800" fill="#cbd5e1" letter-spacing="6" text-anchor="middle" opacity="0.9">ANALYZE</text>
+    <text x="0" y="64" font-family="'Arial', sans-serif" font-size="20" font-weight="800" fill="#cbd5e1" letter-spacing="6" text-anchor="middle" opacity="0.9">IMPROVE</text>
+    <text x="0" y="96" font-family="'Arial', sans-serif" font-size="20" font-weight="900" fill="#c084fc" letter-spacing="6" text-anchor="middle" filter="url(#softGlow)">WIN</text>
+  </g>
+
+  <!-- ================= CENTRAL CHARACTER: AL-RASHDAWI ================= -->
+  <!-- Silhouette Soft Backlight Aura -->
+  <ellipse cx="540" cy="780" rx="360" ry="420" fill="url(#backlightGlow)" filter="url(#neonAura)" opacity="0.65" />
+
+  <!-- Headphone Band Over Top of Head -->
+  <path d="M 330 620 C 330 350, 750 350, 750 620" fill="none" stroke="#18181b" stroke-width="48" stroke-linecap="round" />
+  <path d="M 330 620 C 330 350, 750 350, 750 620" fill="none" stroke="#27272a" stroke-width="32" stroke-linecap="round" />
+  <path d="M 360 550 C 420 420, 660 420, 720 550" fill="none" stroke="#a855f7" stroke-width="6" opacity="0.8" filter="url(#softGlow)" />
+
+  <!-- White Iraq Esports Jersey (Shoulders & Torso) -->
+  <g id="bodyJersey">
+    <!-- Jersey Body Base -->
+    <path d="M 160 1600 C 160 1250, 280 1080, 540 1080 C 800 1080, 920 1250, 920 1600 Z" fill="#f8fafc" />
+    <path d="M 160 1600 C 160 1250, 280 1080, 540 1080 C 800 1080, 920 1250, 920 1600 Z" fill="none" stroke="#e2e8f0" stroke-width="3" />
+
+    <!-- Crew Neck Shadow & Collar -->
+    <path d="M 410 1080 C 410 1220, 670 1220, 670 1080 Z" fill="#e2e8f0" />
+    <path d="M 430 1080 C 430 1190, 650 1190, 650 1080 Z" fill="url(#skinTone)" />
+    <path d="M 410 1080 C 410 1225, 670 1225, 670 1080" fill="none" stroke="#cbd5e1" stroke-width="16" stroke-linecap="round" />
+
+    <!-- Iraq Shield Crest on Chest (Right side facing viewer, Left chest) -->
+    <g transform="translate(260, 1260) scale(1.6)">
+      <!-- Shield Outline -->
+      <path d="M 10 10 L 70 10 L 65 70 L 40 90 L 15 70 Z" fill="#0f172a" stroke="#000000" stroke-width="4" />
+      <path d="M 12 12 L 68 12 L 63 68 L 40 87 L 17 68 Z" fill="#ffffff" />
+      <!-- Top Red Stripe -->
+      <rect x="18" y="28" width="44" height="13" fill="#dc2626" />
+      <!-- Middle White Stripe -->
+      <rect x="18" y="41" width="44" height="13" fill="#ffffff" />
+      <!-- Bottom Black Stripe -->
+      <rect x="18" y="54" width="44" height="13" fill="#000000" />
+      <!-- IRAQ Header -->
+      <text x="40" y="24" font-family="'Arial Black', sans-serif" font-size="10" font-weight="900" fill="#000000" text-anchor="middle" letter-spacing="1">IRAQ</text>
+      <!-- Arabic Inscription (Allahu Akbar) -->
+      <text x="40" y="51" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="#16a34a" text-anchor="middle">الله أكبر</text>
+    </g>
+
+    <!-- Diamond Esports Logo on Chest (Right Side) -->
+    <g transform="translate(740, 1370) scale(1.4)">
+      <polygon points="40,0 80,25 40,50 0,25" fill="none" stroke="#1e293b" stroke-width="7" />
+      <polygon points="40,8 65,25 40,42 15,25" fill="none" stroke="#1e293b" stroke-width="4" />
+    </g>
+  </g>
+
+  <!-- Neck -->
+  <path d="M 450 920 L 450 1110 L 630 1110 L 630 920 Z" fill="url(#skinTone)" />
+  <path d="M 450 920 C 500 1020, 580 1020, 630 920 Z" fill="#b47858" opacity="0.3" />
+
+  <!-- Face Head Base -->
+  <ellipse cx="540" cy="740" rx="170" ry="210" fill="url(#skinTone)" />
+
+  <!-- Cheekbones & Jaw Contours -->
+  <path d="M 390 680 C 400 860, 450 950, 540 950 C 630 950, 680 860, 690 680" fill="none" stroke="#b47858" stroke-width="4" opacity="0.4" />
+
+  <!-- Eyes & Eyebrows -->
+  <!-- Left Eyebrow -->
+  <path d="M 410 630 C 435 605, 480 610, 495 628" fill="none" stroke="#18181b" stroke-width="14" stroke-linecap="round" />
+  <!-- Right Eyebrow -->
+  <path d="M 670 630 C 645 605, 600 610, 585 628" fill="none" stroke="#18181b" stroke-width="14" stroke-linecap="round" />
+
+  <!-- Left Eye -->
+  <ellipse cx="455" cy="660" rx="26" ry="16" fill="#ffffff" />
+  <circle cx="457" cy="660" r="13" fill="#3b271d" />
+  <circle cx="457" cy="660" r="7" fill="#09090b" />
+  <circle cx="461" cy="656" r="3" fill="#ffffff" />
+  <path d="M 425 658 C 445 645, 470 645, 485 660" fill="none" stroke="#18181b" stroke-width="5" stroke-linecap="round" />
+
+  <!-- Right Eye -->
+  <ellipse cx="625" cy="660" rx="26" ry="16" fill="#ffffff" />
+  <circle cx="623" cy="660" r="13" fill="#3b271d" />
+  <circle cx="623" cy="660" r="7" fill="#09090b" />
+  <circle cx="627" cy="656" r="3" fill="#ffffff" />
+  <path d="M 595 660 C 610 645, 635 645, 655 658" fill="none" stroke="#18181b" stroke-width="5" stroke-linecap="round" />
+
+  <!-- Nose -->
+  <path d="M 540 640 L 536 750 C 530 760, 520 765, 510 762" fill="none" stroke="#b47858" stroke-width="4" stroke-linecap="round" opacity="0.6" />
+  <path d="M 515 765 C 530 775, 550 775, 565 765" fill="none" stroke="#8b4d2e" stroke-width="5" stroke-linecap="round" />
+
+  <!-- Lips & Smile -->
+  <path d="M 480 815 C 510 805, 570 805, 600 815" fill="none" stroke="#833d21" stroke-width="6" stroke-linecap="round" />
+  <path d="M 490 820 C 520 838, 560 838, 590 820" fill="#a85232" opacity="0.6" />
+
+  <!-- Full Groomed Beard & Mustache (Natural Dark Styling) -->
+  <!-- Mustache -->
+  <path d="M 470 790 C 510 770, 570 770, 610 790 C 580 808, 500 808, 470 790 Z" fill="#18181b" opacity="0.95" />
+  <!-- Chin Beard & Jawline -->
+  <path d="M 390 710 C 385 860, 440 955, 540 955 C 640 955, 695 860, 690 710 C 675 790, 630 920, 540 920 C 450 920, 405 790, 390 710 Z" fill="#18181b" opacity="0.95" />
+  <path d="M 490 840 C 520 848, 560 848, 590 840 C 575 885, 505 885, 490 840 Z" fill="#18181b" />
+
+  <!-- Voluminous Dark Hair with Distinct Silver-White Highlight Streak -->
+  <path d="M 370 650 C 330 400, 450 250, 540 250 C 650 250, 750 400, 710 650 C 670 480, 590 440, 540 440 C 480 440, 410 490, 370 650 Z" fill="url(#hairTexture)" />
+  <path d="M 420 540 C 440 330, 550 260, 580 260 C 610 320, 560 420, 500 480 Z" fill="url(#silverStreak)" opacity="0.95" filter="url(#softGlow)" />
+  <path d="M 450 460 C 470 340, 530 290, 550 290 C 560 340, 530 420, 480 470 Z" fill="#ffffff" opacity="0.9" />
+
+  <!-- Over-Ear Gaming Headphones (Left & Right Earcups with Violet LED Ring) -->
+  <!-- Left Earcup -->
+  <g transform="translate(250, 550)">
+    <rect x="0" y="0" width="85" height="190" rx="42" fill="#18181b" stroke="#09090b" stroke-width="6" />
+    <rect x="15" y="15" width="55" height="160" rx="27" fill="#27272a" />
+    <!-- Violet LED Rim Light -->
+    <rect x="22" y="22" width="40" height="145" rx="20" fill="none" stroke="url(#headphoneRim)" stroke-width="9" filter="url(#softGlow)" />
+  </g>
+
+  <!-- Right Earcup -->
+  <g transform="translate(745, 550)">
+    <rect x="0" y="0" width="85" height="190" rx="42" fill="#18181b" stroke="#09090b" stroke-width="6" />
+    <rect x="15" y="15" width="55" height="160" rx="27" fill="#27272a" />
+    <!-- Violet LED Rim Light -->
+    <rect x="22" y="22" width="40" height="145" rx="20" fill="none" stroke="url(#headphoneRim)" stroke-width="9" filter="url(#softGlow)" />
+  </g>
+
+  <!-- ================= LOWER SECTION: AL-RASHDAWI CALLIGRAPHY & CONTROLS ================= -->
+  <!-- Dark Vignette Overlay for Crisp Typography Readability -->
+  <path d="M 0 1450 L 1080 1450 L 1080 1920 L 0 1920 Z" fill="#07030e" opacity="0.92" />
+  <ellipse cx="540" cy="1540" rx="480" ry="120" fill="#7e22ce" opacity="0.35" filter="url(#neonAura)" />
+
+  <!-- Arabic Typography "الرشداوي" with Brushstroke Violet Base -->
+  <g transform="translate(540, 1580)">
+    <!-- Violet Brushstroke Base Line -->
+    <path d="M -320 30 C -150 -10, 150 -10, 320 30" stroke="url(#violetText)" stroke-width="24" stroke-linecap="round" fill="none" opacity="0.85" filter="url(#softGlow)" />
+    <!-- Main Calligraphy Arabic Text -->
+    <text x="0" y="0" font-family="'Cairo', 'Tahoma', 'Arial', sans-serif" font-size="130" font-weight="900" fill="#FFFFFF" text-anchor="middle" filter="url(#softGlow)" letter-spacing="4">الرشداوي</text>
+  </g>
+
+  <!-- EFT PRO Sub-Label -->
+  <g transform="translate(540, 1690)">
+    <line x1="-300" y1="-10" x2="-180" y2="-10" stroke="#7e22ce" stroke-width="4" stroke-linecap="round" />
+    <text x="-70" y="0" font-family="'Impact', 'Arial Black', sans-serif" font-size="44" font-style="italic" font-weight="900" fill="#FFFFFF" text-anchor="middle" letter-spacing="4">EFT</text>
+    <text x="70" y="0" font-family="'Impact', 'Arial Black', sans-serif" font-size="44" font-style="italic" font-weight="900" fill="#c084fc" text-anchor="middle" filter="url(#softGlow)" letter-spacing="4">PRO</text>
+    <line x1="180" y1="-10" x2="300" y2="-10" stroke="#7e22ce" stroke-width="4" stroke-linecap="round" />
+  </g>
+
+  <!-- Esports Icons Bar (Gamepad, Football, Stats, Target) -->
+  <g transform="translate(540, 1780)" opacity="0.85">
+    <line x1="-280" y1="0" x2="-220" y2="0" stroke="#a855f7" stroke-width="3" stroke-linecap="round" />
+    
+    <!-- Gamepad -->
+    <g transform="translate(-160, -18) scale(1.4)">
+      <path d="M 5 15 C 5 8, 25 8, 25 15 L 23 24 C 22 27, 18 28, 16 25 L 14 20 L 16 20 L 14 25 C 12 28, 8 27, 7 24 Z" fill="none" stroke="#c084fc" stroke-width="2.2" />
+      <circle cx="10" cy="15" r="1.5" fill="#c084fc" />
+      <circle cx="20" cy="15" r="1.5" fill="#c084fc" />
+    </g>
+
+    <line x1="-90" y1="-15" x2="-90" y2="15" stroke="#4c1d95" stroke-width="2.5" />
+
+    <!-- Football -->
+    <g transform="translate(-18, -18) scale(1.4)">
+      <circle cx="12" cy="12" r="10" fill="none" stroke="#c084fc" stroke-width="2.2" />
+      <polygon points="12,7 16,10 15,15 9,15 8,10" fill="#c084fc" />
+    </g>
+
+    <line x1="90" y1="-15" x2="90" y2="15" stroke="#4c1d95" stroke-width="2.5" />
+
+    <!-- Stats Chart -->
+    <g transform="translate(130, -18) scale(1.4)">
+      <rect x="4" y="14" width="3.5" height="8" rx="1" fill="#c084fc" />
+      <rect x="10" y="8" width="3.5" height="14" rx="1" fill="#c084fc" />
+      <rect x="16" y="2" width="3.5" height="20" rx="1" fill="#c084fc" />
+    </g>
+
+    <line x1="220" y1="0" x2="280" y2="0" stroke="#a855f7" stroke-width="3" stroke-linecap="round" />
+  </g>
+
+  <!-- ================= BOTTOM SAFE ZONE PADDING ================= -->
+  <!-- Clean padding for Android Navigation Bar / Gesture Bar -->
+</svg>

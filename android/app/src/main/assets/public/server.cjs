@@ -35,7 +35,7 @@ app.use(import_express.default.urlencoded({ extended: true, limit: "15mb" }));
 var geminiClient = null;
 function getGemini() {
   if (!geminiClient) {
-    const key = process.env.GEMINI_API_KEY;
+    const key = process.env.GEMINI_API_KEY || process.env.API_KEY;
     if (!key) {
       throw new Error("GEMINI_API_KEY environment variable is not configured");
     }
@@ -51,7 +51,7 @@ function getGemini() {
   return geminiClient;
 }
 async function callGeminiVisionWithFallback(ai, cleanBase64, prompt, systemInstruction) {
-  const candidateModels = ["gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
+  const candidateModels = ["gemini-3.6-flash", "gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
   let lastError = null;
   for (const model of candidateModels) {
     for (let attempt = 1; attempt <= 2; attempt++) {

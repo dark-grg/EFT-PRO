@@ -40,7 +40,7 @@ export const Register = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="bg-background border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors"
-              placeholder="مثال: Dark_Knight"
+              placeholder="مثال: EFT_Player"
               required
             />
           </div>

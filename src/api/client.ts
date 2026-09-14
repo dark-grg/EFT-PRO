@@ -1,5 +1,5 @@
 /**
- * Unified API Client for PES ARENA
+ * Unified API Client for EFT PRO
  * Handles request timeouts, JSON parsing, error normalization, and Android WebView connectivity.
  */
 
@@ -14,7 +14,8 @@ export class ApiError extends Error {
   constructor(
     public message: string,
     public status: number,
-    public code?: string
+    public code?: string,
+    public response?: any
   ) {
     super(message);
     this.name = 'ApiError';
@@ -63,11 +64,11 @@ export const apiClient = {
         if (response.status === 503) {
           msg = 'خوادم الخدمة تشهد ضغطاً مؤقتاً حالياً، يرجى المحاولة بعد لحظات.';
         } else if (response.status === 429) {
-          msg = 'تم بلوغ الحد الأقصى للطلبات مؤقتاً، يرجى الانتظار قليلاً.';
+          msg = data?.message || data?.error || 'مسموح بلفة واحدة كل 24 ساعة فقط.';
         } else if (response.status === 404) {
           msg = 'المورد المطلوب غير متاح.';
         }
-        throw new ApiError(msg, response.status, data?.code);
+        throw new ApiError(msg, response.status, data?.code, data);
       }
 
       return data as T;
@@ -88,15 +89,16 @@ export const apiClient = {
     }
   },
 
-  get<T>(endpoint: string, timeoutMs?: number): Promise<T> {
-    return apiClient.request<T>(endpoint, { method: 'GET' }, timeoutMs);
+  get<T>(endpoint: string, timeoutMs?: number, headers?: Record<string, string>): Promise<T> {
+    return apiClient.request<T>(endpoint, { method: 'GET', headers }, timeoutMs);
   },
 
-  post<T>(endpoint: string, body?: any, timeoutMs?: number): Promise<T> {
+  post<T>(endpoint: string, body?: any, timeoutMs?: number, headers?: Record<string, string>): Promise<T> {
     return apiClient.request<T>(
       endpoint,
       {
         method: 'POST',
+        headers,
         body: body ? JSON.stringify(body) : undefined
       },
       timeoutMs

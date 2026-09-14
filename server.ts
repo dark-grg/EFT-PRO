@@ -17,7 +17,7 @@ app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 let geminiClient: GoogleGenAI | null = null;
 function getGemini(): GoogleGenAI {
   if (!geminiClient) {
-    const key = process.env.GEMINI_API_KEY;
+    const key = process.env.GEMINI_API_KEY || process.env.API_KEY;
     if (!key) {
       throw new Error("GEMINI_API_KEY environment variable is not configured");
     }
@@ -41,7 +41,7 @@ async function callGeminiVisionWithFallback(
   systemInstruction: string
 ): Promise<string> {
   // Sequence of allowed multimodal vision models
-  const candidateModels = ["gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
+  const candidateModels = ["gemini-3.6-flash", "gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
   let lastError: any = null;
 
   for (const model of candidateModels) {

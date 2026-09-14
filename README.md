@@ -1,4 +1,4 @@
-# PES ARENA
+# EFT PRO
 
 منصة eFootball احترافية متكاملة للبطولات، التشكيلات، تحليل التشكيلة بالذكاء الاصطناعي، تطويرات وبطاقات اللاعبين، وعجلة الحظ التفاعلية مع دعم كامل للويب ونظام أندرويد (Capacitor / Android WebView) و Cloudflare Workers Backend.
 
