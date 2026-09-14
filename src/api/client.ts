@@ -22,13 +22,33 @@ export class ApiError extends Error {
   }
 }
 
+const PRODUCTION_WORKER_URL = 'https://eft-pro.grg0.workers.dev';
+
 const getFullUrl = (endpoint: string): string => {
   if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
     return endpoint;
   }
-  const baseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+  
+  const envBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+  
+  // If explicitly configured in env, use it
+  if (envBaseUrl) {
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    return `${envBaseUrl}${cleanEndpoint}`;
+  }
+
+  // If in browser web mode on the same domain (e.g. dev proxy or deployed applet), use relative endpoint
+  if (typeof window !== 'undefined' && window.location && window.location.origin) {
+    const origin = window.location.origin;
+    if (origin.startsWith('http://localhost') || origin.startsWith('capacitor://') || origin.startsWith('file://')) {
+      // In Capacitor native app, route directly to the Cloudflare production worker
+      const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+      return `${PRODUCTION_WORKER_URL}${cleanEndpoint}`;
+    }
+  }
+
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  return `${baseUrl}${cleanEndpoint}`;
+  return cleanEndpoint;
 };
 
 export const apiClient = {

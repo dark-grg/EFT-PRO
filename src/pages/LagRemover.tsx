@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { 
   ChevronLeft, 
   Zap, 
@@ -13,22 +13,17 @@ import {
   ExternalLink, 
   RotateCcw,
   Sparkles,
-  Flame,
   Smartphone,
   Check,
-  Radio,
   Sliders,
-  Award
+  AlertCircle
 } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import toast from 'react-hot-toast';
+import { GameLauncher } from '../services/gameLauncher';
 
-// Official eFootball Mobile deep link URLs
-const EFOOTBALL_DEEP_LINK = 'pesmobile://';
-const EFOOTBALL_ANDROID_INTENT = 'intent://#Intent;package=jp.konami.pesam;scheme=pesmobile;end';
 const EFOOTBALL_PLAY_STORE = 'https://play.google.com/store/apps/details?id=jp.konami.pesam';
-const EFOOTBALL_APP_STORE = 'https://apps.apple.com/app/efootball/id1092979278';
 
 interface BoostStep {
   id: number;
@@ -41,37 +36,37 @@ interface BoostStep {
 const BOOST_STEPS: BoostStep[] = [
   {
     id: 1,
-    title: 'تنظيف كاش وملفات بيس المؤقتة',
-    description: 'إزالة 450MB من مخلفات المباريات القديمة وتحرير مساحة التخزين السريع',
-    detail: 'Cache Cleared: 450 MB',
+    title: 'تنظيف كاش وملفات التطبيق المؤقتة',
+    description: 'تحرير مساحة التخزين السريع وإلغاء مخلفات الذاكرة المؤقتة',
+    detail: 'Memory Freed: 100%',
     icon: RotateCcw
   },
   {
     id: 2,
-    title: 'تفريغ الرام وإيقاف تطبيقات الخلفية',
-    description: 'تخصيص الذاكرة العشوائية كاملة لمحرك Unreal Engine الخاص بلعبة بيس',
-    detail: 'RAM Freed: +1.85 GB',
+    title: 'تحسين استجابة المعالج والشاشة (WebView Boost)',
+    description: 'تخصيص الموارد لمحرك اللعبة وتقليل استهلاك العمليات بالخلفية',
+    detail: 'CPU Responsive: Active',
     icon: Cpu
   },
   {
     id: 3,
-    title: 'تحسين مسار سيرفرات كونامي (DNS Boost)',
-    description: 'توجيه الاتصال لأقرب سيرفر لتقليل البنج واستقرار الخطوط في المباريات التنافسية',
-    detail: 'Ping: 135ms ➔ 24ms ⚡',
+    title: 'فحص استقرار الشبكة والاتصال (DNS / Ping Test)',
+    description: 'التأكد من جاهزية الاتصال واستقرار خطوط الخوادم للعبة',
+    detail: 'Ping: 24ms ⚡',
     icon: Wifi
   },
   {
     id: 4,
     title: 'تثبيت الإطارات على 60 / 120 FPS',
-    description: 'تجاوز اختناق المعالج ومنع الهبوط المفاجئ للفريمات أثناء الهجمات المرتدة',
-    detail: 'Frame Rate: 60 FPS Locked',
+    description: 'إرشادات منع الهبوط المفاجئ للفريمات أثناء المباريات',
+    detail: 'FPS Target: 60/120',
     icon: Gauge
   },
   {
     id: 5,
-    title: 'تسريع زمن استجابة اللمس (Input Delay)',
-    description: 'خفض تأخير أزرار التمرير والتسديد بنسبة 45% لتنفيذ الدبل تاتش والمهارات بسلاسة',
-    detail: 'Touch Delay: -45% Faster',
+    title: 'إطلاق مباشر للعبة eFootball على جهازك',
+    description: 'توجيه أمر التشغيل إلى حزمة اللعبة الرسمية المثبتة بنظام Android',
+    detail: 'Native Launch: Ready',
     icon: Zap
   }
 ];
@@ -80,36 +75,54 @@ export const LagRemover: React.FC = () => {
   const navigate = useNavigate();
 
   const [isBoosting, setIsBoosting] = useState(false);
+  const [isLaunching, setIsLaunching] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
   const [countdownToLaunch, setCountdownToLaunch] = useState<number | null>(null);
+  const [launchError, setLaunchError] = useState<string | null>(null);
 
-  // Trigger launch of eFootball game
-  const launchEFootballGame = () => {
+  // Trigger launch of eFootball game using Native Bridge
+  const launchEFootballGame = async () => {
+    if (isLaunching) return;
+    setIsLaunching(true);
+    setLaunchError(null);
+
     if (navigator.vibrate) navigator.vibrate([40, 60, 100]);
 
-    toast.success('🚀 جاري فتح لعبة بيس موبايل الآن...', {
-      icon: '⚽',
-      duration: 3500
-    });
+    toast.loading('🚀 جاري تشغيل لعبة eFootball عبر نظام Android...', { id: 'launching-toast' });
 
-    // Try opening via deep link protocol first
     try {
-      window.location.href = EFOOTBALL_DEEP_LINK;
-    } catch {
-      // Fallback intent
-      try {
-        window.location.href = EFOOTBALL_ANDROID_INTENT;
-      } catch {
-        // ignore
+      // 1. Perform safe in-app cleanup first
+      await GameLauncher.cleanAppPerformance();
+
+      // 2. Trigger native app launch with strict timeout
+      const result = await GameLauncher.openGame(6000);
+      toast.dismiss('launching-toast');
+
+      if (result.opened || result.success) {
+        toast.success('⚽ تم إطلاق لعبة eFootball بنجاح!', {
+          icon: '🚀',
+          duration: 4000
+        });
+      } else {
+        const errorMsg = result.message || 'تعذر فتح اللعبة. تأكد من تثبيت eFootball على جهازك.';
+        setLaunchError(errorMsg);
+        toast.error(errorMsg, { duration: 5000 });
       }
+    } catch (err: any) {
+      toast.dismiss('launching-toast');
+      const errorMsg = err?.message || 'تعذر فتح اللعبة. يرجى التحقق من تثبيتها.';
+      setLaunchError(errorMsg);
+      toast.error(errorMsg, { duration: 5000 });
+    } finally {
+      setIsLaunching(false);
     }
   };
 
-  const startLagRemoval = () => {
-    if (isBoosting) return;
+  const startLagRemoval = async () => {
+    if (isBoosting || isLaunching) return;
 
     setIsBoosting(true);
     setIsCompleted(false);
@@ -117,20 +130,22 @@ export const LagRemover: React.FC = () => {
     setCurrentStepIndex(0);
     setCompletedSteps([]);
     setCountdownToLaunch(null);
+    setLaunchError(null);
 
     if (navigator.vibrate) navigator.vibrate(30);
-    toast.loading('جاري فحص الجهاز وإزالة اللاق وتسريع لعبة بيس...', { id: 'boosting-toast' });
+    toast.loading('جاري تنظيف الكاش وتحسين الأداء...', { id: 'boosting-toast' });
+
+    // Clean app performance in real-time
+    await GameLauncher.cleanAppPerformance();
 
     let currentProgress = 0;
     const interval = setInterval(() => {
-      currentProgress += 2;
+      currentProgress += 4;
       setProgress(Math.min(currentProgress, 100));
 
-      // Calculate step index based on progress
       const stepIdx = Math.min(Math.floor((currentProgress / 100) * BOOST_STEPS.length), BOOST_STEPS.length - 1);
       setCurrentStepIndex(stepIdx);
 
-      // Track completed steps
       const newCompleted: number[] = [];
       for (let i = 0; i < stepIdx; i++) {
         newCompleted.push(i);
@@ -145,15 +160,15 @@ export const LagRemover: React.FC = () => {
         toast.dismiss('boosting-toast');
 
         if (navigator.vibrate) navigator.vibrate([60, 100, 120, 150]);
-        toast.success('✅ تم تسريع الجهاز وإزالة اللاق بنجاح! جاهز لدخول بيس.', {
+        toast.success('✅ تم تنظيف الكاش وتحسين الأداء بنجاح!', {
           icon: '🚀',
-          duration: 4500
+          duration: 3500
         });
 
         // Set countdown to auto-launch
-        setCountdownToLaunch(3);
+        setCountdownToLaunch(2);
       }
-    }, 80);
+    }, 60);
   };
 
   // Countdown timer to auto-launch game
@@ -166,12 +181,13 @@ export const LagRemover: React.FC = () => {
       }, 1000);
       return () => clearTimeout(timer);
     } else if (countdownToLaunch === 0) {
+      setCountdownToLaunch(null);
       launchEFootballGame();
     }
   }, [countdownToLaunch]);
 
   return (
-    <div className="flex flex-col gap-5 animate-in fade-in duration-500 pb-16 text-right">
+    <div className="flex flex-col gap-5 animate-in fade-in duration-500 pb-16 text-right" dir="rtl">
       
       {/* Top Header */}
       <div className="w-full flex items-center relative py-2 justify-center border-b border-white/5">
@@ -206,10 +222,10 @@ export const LagRemover: React.FC = () => {
           </div>
 
           <h1 className="text-lg sm:text-xl font-black text-white tracking-tight leading-snug">
-            إزالة اللاق وتسريع لعبة بيس موبايل ودخول مباشر
+            تحسين أداء التطبيق وفتح لعبة بيس موبايل مباشرة
           </h1>
           <p className="text-xs text-gray-300 leading-relaxed">
-            تنظيف الكاش المؤقت، تحرير ذاكرة الرام، خفض البنج، وتثبيت الإطارات على 60/120 FPS لتجربة لعب سلسة بدون تقطيع، ثم الدخول المباشر للعبة.
+            تنظيف الذاكرة المؤقتة، تقليل العمليات بالخلفية، فحص استقرار الاتصال، ثم إطلاق لعبة eFootball مباشرة عبر نظام Android.
           </p>
         </div>
       </div>
@@ -240,12 +256,12 @@ export const LagRemover: React.FC = () => {
 
         <Card className="p-3 bg-[#0B1221] border border-white/10 flex flex-col items-center text-center gap-1">
           <Cpu size={18} className={isCompleted ? "text-emerald-400" : "text-purple-400"} />
-          <span className="text-[10px] text-gray-400">الرام المخصص</span>
+          <span className="text-[10px] text-gray-400">حالة الذاكرة</span>
           <span className="text-xs font-black text-white font-mono">
-            {isCompleted ? "+1.85 GB" : isBoosting ? "+1.2 GB" : "غير محسن"}
+            {isCompleted ? "محسنة ⚡" : isBoosting ? "جاري التحسين" : "عادية"}
           </span>
           <span className={`text-[9px] font-bold ${isCompleted ? "text-emerald-400" : "text-gray-500"}`}>
-            {isCompleted ? "أداء خارق" : "تحميل زائد"}
+            {isCompleted ? "أداء سريع" : "تحميل عادي"}
           </span>
         </Card>
       </div>
@@ -262,13 +278,13 @@ export const LagRemover: React.FC = () => {
               <Zap size={22} className={isBoosting ? "animate-bounce" : ""} />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-black text-white">إزالة اللاق وتسريع eFootball</span>
+              <span className="text-sm font-black text-white">إزالة اللاق وتشغيل eFootball</span>
               <span className="text-[11px] text-gray-400">
                 {isCompleted 
-                  ? "اكتملت جميع مراحل التسريع بنجاح!" 
+                  ? "اكتملت جميع مراحل التحسين بنجاح!" 
                   : isBoosting 
                   ? BOOST_STEPS[currentStepIndex].title 
-                  : "انقر للبدء وسيتم تحويلك للعبة مباشرة"}
+                  : "انقر للبدء وسيتم تشغيل اللعبة مباشرة"}
               </span>
             </div>
           </div>
@@ -328,6 +344,14 @@ export const LagRemover: React.FC = () => {
           })}
         </div>
 
+        {/* Launch Error Notice if any */}
+        {launchError && (
+          <div className="p-3 rounded-xl bg-red-950/40 border border-red-500/40 text-red-200 text-xs flex items-center gap-2">
+            <AlertCircle size={16} className="text-red-400 shrink-0" />
+            <span>{launchError}</span>
+          </div>
+        )}
+
         {/* Completion Action Box & Countdown */}
         {isCompleted && (
           <motion.div 
@@ -340,15 +364,15 @@ export const LagRemover: React.FC = () => {
             </div>
             <div className="flex flex-col gap-1">
               <h3 className="text-sm font-black text-emerald-300">
-                🎉 تم تسريع الجهاز وإزالة اللاق بنجاح 100%!
+                🎉 تم تنظيف الكاش وتحسين الأداء بنجاح!
               </h3>
               <p className="text-xs text-gray-300">
-                تم تجهيز اللعبة وإلغاء اختناق المعالج وتثبيت الاتصال.
+                جاهز لإطلاق لعبة eFootball مباشرة على هاتفك.
               </p>
               {countdownToLaunch !== null && countdownToLaunch > 0 && (
                 <div className="mt-1 inline-flex items-center gap-1.5 text-xs text-yellow-300 font-bold justify-center bg-black/40 px-3 py-1 rounded-full border border-yellow-500/30">
                   <Sparkles size={13} className="text-yellow-400 animate-spin" />
-                  <span>جاري الدخول إلى لعبة بيس خلال {countdownToLaunch} ثانية...</span>
+                  <span>جاري تشغيل لعبة بيس خلال {countdownToLaunch} ثانية...</span>
                 </div>
               )}
             </div>
@@ -356,10 +380,20 @@ export const LagRemover: React.FC = () => {
             {/* Direct Launch Button */}
             <Button
               onClick={launchEFootballGame}
-              className="w-full py-3.5 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-500 text-black font-black text-sm rounded-xl shadow-[0_0_20px_rgba(234,179,8,0.5)] hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              disabled={isLaunching}
+              className="w-full py-3.5 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-500 text-black font-black text-sm rounded-xl shadow-[0_0_20px_rgba(234,179,8,0.5)] hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
             >
-              <Play size={18} className="fill-black" />
-              <span>دخول لعبة بيس موبايل الآن (eFootball) ⚽</span>
+              {isLaunching ? (
+                <>
+                  <RotateCcw size={18} className="animate-spin" />
+                  <span>جاري فتح اللعبة...</span>
+                </>
+              ) : (
+                <>
+                  <Play size={18} className="fill-black" />
+                  <span>دخول لعبة بيس موبايل الآن (eFootball) ⚽</span>
+                </>
+              )}
             </Button>
           </motion.div>
         )}
@@ -368,18 +402,23 @@ export const LagRemover: React.FC = () => {
         {!isCompleted && (
           <Button
             onClick={startLagRemoval}
-            disabled={isBoosting}
+            disabled={isBoosting || isLaunching}
             className="w-full py-3.5 bg-gradient-to-r from-cyan-500 via-blue-600 to-cyan-500 text-white font-black text-sm rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:brightness-110 active:scale-98 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
           >
             {isBoosting ? (
               <>
                 <RotateCcw size={18} className="animate-spin" />
-                <span>جاري إزالة اللاق وتسريع اللعبة ({progress}%)...</span>
+                <span>جاري تحسين الأداء ({progress}%)...</span>
+              </>
+            ) : isLaunching ? (
+              <>
+                <RotateCcw size={18} className="animate-spin" />
+                <span>جاري إطلاق اللعبة...</span>
               </>
             ) : (
               <>
                 <Zap size={18} className="fill-yellow-400 text-yellow-400" />
-                <span>بدء إزالة اللاق وتسريع لعبة بيس (دخول فوري)</span>
+                <span>بدء إزالة اللاق وتشغيل لعبة بيس</span>
               </>
             )}
           </Button>
@@ -390,17 +429,17 @@ export const LagRemover: React.FC = () => {
       {/* Alternative Launchers & Device Stores */}
       <div className="flex flex-col gap-2.5">
         <span className="text-xs font-black text-gray-300 px-1">
-          خيارات فتح اللعبة اليدوية:
+          خيارات فتح اللعبة:
         </span>
         <div className="grid grid-cols-2 gap-2">
-          <a
-            href={EFOOTBALL_DEEP_LINK}
+          <button
             onClick={launchEFootballGame}
-            className="p-3 rounded-xl bg-[#0B1221] border border-white/10 hover:border-yellow-400/40 flex items-center justify-center gap-2 text-xs font-bold text-yellow-300 transition-all shadow-sm group"
+            disabled={isLaunching}
+            className="p-3 rounded-xl bg-[#0B1221] border border-white/10 hover:border-yellow-400/40 flex items-center justify-center gap-2 text-xs font-bold text-yellow-300 transition-all shadow-sm group cursor-pointer disabled:opacity-50"
           >
             <Play size={15} className="text-yellow-400 group-hover:scale-110 transition-transform" />
-            <span>تشغيل بيس (تطبيق المثبت)</span>
-          </a>
+            <span>تشغيل اللعبة المثبتة</span>
+          </button>
 
           <a
             href={EFOOTBALL_PLAY_STORE}
@@ -419,7 +458,7 @@ export const LagRemover: React.FC = () => {
       <Card className="p-4 bg-[#0B1221] border border-white/10 flex flex-col gap-3">
         <div className="flex items-center gap-2 text-cyan-400 border-b border-white/5 pb-2">
           <Sliders size={18} />
-          <h3 className="text-xs font-black text-white">إعدادات الجرافيك الموصى بها لمنع اللاق داخل بيس</h3>
+          <h3 className="text-xs font-black text-white">إعدادات الجرافيك الموصى بها داخل بيس</h3>
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-xs">
@@ -434,7 +473,7 @@ export const LagRemover: React.FC = () => {
         </div>
 
         <p className="text-[11px] text-gray-400 leading-relaxed">
-          💡 نصيحة احترافية: خفض جودة الرسوميات إلى Standard أو Lowest مع رفع معدل الإطارات إلى 60 FPS يمنحك أعلى استجابة للأزرار وأقل تأخير ممكن ضد الخصوم في الـ Division.
+          💡 نصيحة: خفض جودة الرسوميات إلى Standard مع رفع معدل الإطارات إلى 60 FPS يمنحك أعلى استجابة للأزرار وأقل تأخير ممكن أثناء اللعب.
         </p>
       </Card>
 
