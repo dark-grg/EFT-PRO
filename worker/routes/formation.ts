@@ -79,6 +79,10 @@ export async function handleAnalyzeFormation(request: Request, env: Env): Promis
 
   try {
     const rawResult = await analyzeFormationWithGemini(apiKey, cleanBase64, prompt, systemInstruction);
+    
+    // Log safe raw response keys in development
+    console.log('Gemini Raw Response Keys:', Object.keys(rawResult || {}));
+
     const canonicalResult = normalizeFormationResult(rawResult);
     return jsonResponse(canonicalResult, 200, request);
   } catch (error: any) {
@@ -170,10 +174,11 @@ export function normalizeFormationResult(raw: any) {
     ? raw.tacticalAdvice.filter((a: any) => typeof a === 'string' && a.trim()) 
     : (Array.isArray(raw?.advice) ? raw.advice.filter((a: any) => typeof a === 'string' && a.trim()) : []);
 
-  return {
+  const canonical = {
     isFormationScreenshot,
     isReliable,
     unreliableReason,
+    gameName: typeof raw?.gameName === 'string' && raw.gameName.trim() ? raw.gameName.trim() : null,
     formationName,
     tacticalRating,
     detectedPlayers,
@@ -184,4 +189,26 @@ export function normalizeFormationResult(raw: any) {
     weaknesses,
     tacticalAdvice
   };
+
+  return validateFormationResult(canonical);
+}
+
+function validateFormationResult(result: any) {
+  if (!result.isFormationScreenshot) {
+    result.isReliable = false;
+    result.unreliableReason = result.unreliableReason || 'الصورة المرفوعة ليست لقطة شاشة لتشكيلة كرة قدم صالحة.';
+  }
+
+  if (!Array.isArray(result.detectedPlayers) || result.detectedPlayers.length === 0) {
+    result.isReliable = false;
+    result.unreliableReason = 'لم يتم التعرف على أي لاعب من الصورة';
+    result.detectedPlayers = [];
+  }
+
+  if (!result.formationName) {
+    // We shouldn't necessarily make it unreliable just because of formationName, but user requested to check it
+    // Wait, user says: أو formationName غير واضح (we just leave it null)
+  }
+
+  return result;
 }

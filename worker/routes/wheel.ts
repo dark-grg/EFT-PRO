@@ -1,6 +1,7 @@
 import { Env } from '../types';
 import { jsonResponse, errorResponse } from '../utils/response';
 import { getWheelStatus, executeSpin } from '../services/wheelService';
+import { DEFAULT_PRIZES } from '../durable-objects/WheelDurableObject';
 
 export function handleGetTime(request: Request): Response {
   const now = Date.now();
@@ -8,6 +9,13 @@ export function handleGetTime(request: Request): Response {
     ok: true,
     serverTime: now,
     iso: new Date(now).toISOString()
+  }, 200, request);
+}
+
+export function handleGetWheelPrizes(request: Request): Response {
+  return jsonResponse({
+    ok: true,
+    prizes: DEFAULT_PRIZES
   }, 200, request);
 }
 

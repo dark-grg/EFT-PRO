@@ -22,10 +22,37 @@ export interface WheelSpinResponse {
   idempotent?: boolean;
 }
 
+export interface CanonicalPrize {
+  id: string;
+  name: string;
+  subtitle: string;
+  type: string;
+  iconColor: string;
+  isSpecial?: boolean;
+  percentage?: number;
+}
+
 const LOCAL_LAST_SPIN_KEY = 'eft_wheel_last_spin_time_v2';
 const LOCAL_NEXT_SPIN_KEY = 'eft_wheel_next_spin_time_v2';
 
 export const wheelApi = {
+  /**
+   * Retrieves the canonical list of prizes from the server
+   */
+  async getPrizes(): Promise<CanonicalPrize[]> {
+    try {
+      const res = await apiClient.get<{ ok: boolean; prizes: CanonicalPrize[] }>('/api/wheel/prizes', 5000);
+      if (res.ok && Array.isArray(res.prizes)) {
+        return res.prizes;
+      }
+      throw new Error("Invalid prizes response");
+    } catch (err) {
+      console.warn("Failed to fetch wheel prizes from server, fallback to local:", err);
+      // Fallback empty array, the UI should handle this gracefully
+      return [];
+    }
+  },
+
   /**
    * Retrieves current wheel cooldown status from authoritative server
    */

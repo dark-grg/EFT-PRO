@@ -8,6 +8,7 @@ export interface GameLaunchResult {
   error?: string;
   message?: string;
   method?: string;
+  status?: 'GAME_LAUNCHED' | 'GAME_NOT_INSTALLED' | 'GAME_INSTALLED_BUT_NO_LAUNCHER' | 'UNKNOWN_ERROR';
 }
 
 interface GameLauncherNativePlugin {
@@ -52,7 +53,8 @@ export const GameLauncher = {
               success: true,
               opened: true,
               isInstalled: true,
-              method: res.method || 'native_plugin'
+              method: res.method || 'native_plugin',
+              status: 'GAME_LAUNCHED'
             };
           }
           if (res.isInstalled === false) {
@@ -60,14 +62,17 @@ export const GameLauncher = {
               success: false,
               opened: false,
               isInstalled: false,
-              message: 'اللعبة غير مثبتة على الجهاز.'
+              message: 'اللعبة غير مثبتة على الجهاز.',
+              status: 'GAME_NOT_INSTALLED'
             };
           }
           if (res.error === 'SECURITY_ERROR') {
             return {
               success: false,
               opened: false,
-              message: 'Android لم يسمح بفتح التطبيق.'
+              isInstalled: true,
+              message: 'Android لم يسمح بفتح التطبيق.',
+              status: 'GAME_INSTALLED_BUT_NO_LAUNCHER'
             };
           }
         } catch (err: any) {
@@ -83,13 +88,15 @@ export const GameLauncher = {
           return {
             success: true,
             opened: true,
-            method: 'web_scheme'
+            method: 'web_scheme',
+            status: 'GAME_LAUNCHED'
           };
         } catch {
           return {
             success: false,
             opened: false,
-            message: 'تعذر فتح اللعبة. تأكد من تشغيل التطبيق على هاتف أندرويد مثبت عليه لعبة eFootball.'
+            message: 'تعذر فتح اللعبة. تأكد من تشغيل التطبيق على هاتف أندرويد مثبت عليه لعبة eFootball.',
+            status: 'GAME_NOT_INSTALLED'
           };
         }
       }
@@ -97,7 +104,8 @@ export const GameLauncher = {
       return {
         success: false,
         opened: false,
-        message: 'تعذر تحديد بيئة التشغيل.'
+        message: 'تعذر تحديد بيئة التشغيل.',
+        status: 'UNKNOWN_ERROR'
       };
     })();
 
@@ -107,7 +115,8 @@ export const GameLauncher = {
         resolve({
           success: false,
           opened: false,
-          message: 'انتهت مهلة محاولة فتح اللعبة. تأكد من تثبيت لعبة eFootball على جهازك.'
+          message: 'انتهت مهلة محاولة فتح اللعبة. تأكد من تثبيت لعبة eFootball على جهازك.',
+          status: 'GAME_NOT_INSTALLED'
         });
       }, timeoutMs);
     });
@@ -118,7 +127,8 @@ export const GameLauncher = {
       return {
         success: false,
         opened: false,
-        message: err?.message || 'حدث خطأ أثناء محاولة فتح اللعبة.'
+        message: err?.message || 'حدث خطأ أثناء محاولة فتح اللعبة.',
+        status: 'UNKNOWN_ERROR'
       };
     }
   },

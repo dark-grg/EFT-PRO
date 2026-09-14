@@ -50,7 +50,7 @@ export const Home: React.FC = () => {
                   </span>
                 </div>
                 <span className="text-[11px] text-gray-300">
-                  تنظيف الكاش، تفريغ الرام، خفض البنج، وتثبيت 60 FPS
+                  تنظيف الكاش، تفريغ الرام، وتحسين أداء اللعبة
                 </span>
               </div>
             </div>
@@ -61,13 +61,13 @@ export const Home: React.FC = () => {
 
           <div className="flex items-center justify-between pt-2 border-t border-white/10 text-[10px] text-gray-400">
             <span className="flex items-center gap-1 font-mono text-cyan-300 font-bold">
-              ⚡ Ping: 24ms
+              ⚡ مسرّع الأداء
             </span>
             <span className="flex items-center gap-1 font-mono text-emerald-300 font-bold">
-              🔒 60 FPS Locked
+              🔒 تنظيف تلقائي
             </span>
             <span className="text-yellow-400 font-bold flex items-center gap-1">
-              بدء التسريع والدخول ➔
+              بدء الدخول ➔
             </span>
           </div>
         </Card>
@@ -218,7 +218,7 @@ export const Home: React.FC = () => {
               </div>
               <div className="flex flex-col text-right">
                 <span className="text-xs font-black text-white group-hover:text-cyan-400 transition-colors">إزالة اللاق</span>
-                <span className="text-[10px] text-gray-400 mt-0.5">تسريع 60 FPS ودخول مباشر لبيس</span>
+                <span className="text-[10px] text-gray-400 mt-0.5">تسريع اللعبة ودخول مباشر لبيس</span>
               </div>
             </Card>
           </motion.div>

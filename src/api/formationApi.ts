@@ -41,7 +41,15 @@ export const formationApi = {
     );
 
     if (import.meta.env.DEV) {
-      console.log('FORMATION RESPONSE KEYS:', Object.keys(result));
+      console.log('FORMATION API RESPONSE:', {
+        endpoint: '/api/analyze-formation',
+        responseKeys: Object.keys(result),
+        isFormationScreenshot: result.isFormationScreenshot,
+        isReliable: result.isReliable,
+        detectedPlayersCount: result.detectedPlayers?.length || 0,
+        formationName: result.formationName,
+        tacticalRating: result.tacticalRating,
+      });
     }
 
     return result;

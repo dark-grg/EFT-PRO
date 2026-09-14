@@ -38,24 +38,19 @@ const TELEGRAM_CHANNEL_HANDLE = '@P2_B3';
 const TELEGRAM_STORAGE_KEY = 'eft_telegram_wheel_verified_user_v4';
 const TELEGRAM_STATUS_KEY = 'eft_telegram_wheel_verified_status_v4';
 
-interface Prize {
-  id: string;
-  name: string;
-  subtitle: string;
-  type: 'special_player' | 'coins' | 'ipad' | 'training' | 'better_luck' | 'rare_item';
-  iconColor: string;
-  percentage: number;
-  isSpecial?: boolean;
-  image?: string;
-}
-
 // Exactly matching user request:
 // 1. سواريز: 1%
 // 2. 150 كوينز: 1%
 // 3. ايباد برو: 0%
 // 4. كاسياس: 1%
 // 5. حظ اوفر: 97% (تصل النسبة الإجمالية إلى 100% بدقة بعد طلب 99% + 3% جوائز)
-const WHEEL_PRIZES: Prize[] = [
+import { wheelApi, CanonicalPrize } from '../api/wheelApi';
+
+interface Prize extends CanonicalPrize {
+  image?: string;
+}
+
+const FALLBACK_PRIZES: Prize[] = [
   {
     id: 'suarez',
     name: 'لاعب مميز: لويس سواريز',
@@ -105,6 +100,23 @@ const WHEEL_PRIZES: Prize[] = [
 export const Wheel: React.FC = () => {
   const navigate = useNavigate();
 
+  const [prizes, setPrizes] = useState<Prize[]>(FALLBACK_PRIZES);
+
+  useEffect(() => {
+    // Load canonical prizes
+    wheelApi.getPrizes().then(serverPrizes => {
+      if (serverPrizes && serverPrizes.length > 0) {
+        // Map images to server prizes
+        const imageMap: Record<string, any> = {
+          'suarez': suarezImage,
+          'ipad_prize': ipadImage,
+          'casillas': casillasImage
+        };
+        setPrizes(serverPrizes.map(p => ({ ...p, image: imageMap[p.id] })));
+      }
+    });
+  }, []);
+
   // Telegram verification state - default unlocked
   const [isSubscribed, setIsSubscribed] = useState<boolean>(true);
 
@@ -120,7 +132,7 @@ export const Wheel: React.FC = () => {
   const [wonPrize, setWonPrize] = useState<Prize | null>(null);
   const [history, setHistory] = useState<Array<{ prize: Prize; time: string }>>([
     { 
-      prize: WHEEL_PRIZES[1], 
+      prize: FALLBACK_PRIZES[1], 
       time: 'منذ ساعتين' 
     }
   ]);
@@ -247,16 +259,16 @@ export const Wheel: React.FC = () => {
 
       // DEFENSIVE PRIZE RESOLUTION:
       // Look up prize strictly by authoritative server prizeId
-      const targetIndex = WHEEL_PRIZES.findIndex(p => p.id === spinResult.prizeId);
+      const targetIndex = prizes.findIndex(p => p.id === spinResult.prizeId);
 
       if (targetIndex < 0 || !Number.isFinite(targetIndex)) {
         throw new Error('الجائزة التي أعادها الخادم غير موجودة في قائمة العجلة.');
       }
 
-      const selected = WHEEL_PRIZES[targetIndex];
+      const selected = prizes[targetIndex];
 
-      // Each slice is 72 degrees (360 / 5)
-      const sliceAngle = 360 / WHEEL_PRIZES.length; // 72 deg
+      // Each slice is 360 / length
+      const sliceAngle = 360 / prizes.length; // 72 deg
       const targetSliceCenter = targetIndex * sliceAngle + sliceAngle / 2;
       
       const fullSpins = 360 * 5; // 5 full turns
@@ -354,23 +366,28 @@ export const Wheel: React.FC = () => {
             transition: isSpinning ? 'transform 4000ms cubic-bezier(0.15, 0.95, 0.35, 1)' : 'none'
           }}
         >
-          {/* Conic Gradient Slices with Vibrant Segment Accents for 5 items (72 deg each) */}
+          {/* Dynamic Conic Gradient Slices */}
           <div 
             className="absolute inset-0 rounded-full"
             style={{
-              background: `conic-gradient(
-                #78350f 0deg 72deg,
-                #854d0e 72deg 144deg,
-                #0e7490 144deg 216deg,
-                #0369a1 216deg 288deg,
-                #1e293b 288deg 360deg
-              )`
+              background: `conic-gradient(${
+                prizes.map((p, idx) => {
+                  const anglePerSlice = 360 / prizes.length;
+                  const startAngle = idx * anglePerSlice;
+                  const endAngle = startAngle + anglePerSlice;
+                  // Alternate basic colors, or use specific ones if needed.
+                  const colors = ['#78350f', '#854d0e', '#0e7490', '#0369a1', '#1e293b'];
+                  const color = colors[idx % colors.length];
+                  return `${color} ${startAngle}deg ${endAngle}deg`;
+                }).join(', ')
+              })`
             }}
           />
 
-          {/* Segment Labels Overlay for 5 Prizes (72 degrees each) */}
-          {WHEEL_PRIZES.map((prize, idx) => {
-            const angle = idx * 72 + 36; // center of each 72-degree slice
+          {/* Segment Labels Overlay */}
+          {prizes.map((prize, idx) => {
+            const anglePerSlice = 360 / prizes.length;
+            const angle = idx * anglePerSlice + (anglePerSlice / 2); // center of slice
             return (
               <div
                 key={prize.id}

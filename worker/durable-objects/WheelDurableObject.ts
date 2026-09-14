@@ -5,14 +5,60 @@ export interface PrizeOption {
   id: string;
   weight: number;
   index: number;
+  name: string;
+  subtitle: string;
+  type: string;
+  iconColor: string;
+  isSpecial?: boolean;
 }
 
 export const DEFAULT_PRIZES: PrizeOption[] = [
-  { id: 'suarez', weight: 1, index: 0 },
-  { id: 'coins_150', weight: 1, index: 1 },
-  { id: 'ipad_prize', weight: 0, index: 2 },
-  { id: 'casillas', weight: 1, index: 3 },
-  { id: 'better_luck', weight: 97, index: 4 }
+  { 
+    id: 'suarez', 
+    weight: 1, 
+    index: 0,
+    name: 'لاعب مميز: لويس سواريز',
+    subtitle: 'طاقات 100 OVR - إبيك بوستر',
+    type: 'special_player',
+    iconColor: '#EAB308',
+    isSpecial: true
+  },
+  { 
+    id: 'coins_150', 
+    weight: 1, 
+    index: 1,
+    name: '150 كوينز',
+    subtitle: 'شحن كوينز مجاني للحساب',
+    type: 'coins',
+    iconColor: '#F59E0B'
+  },
+  { 
+    id: 'ipad_prize', 
+    weight: 0, 
+    index: 2,
+    name: 'جهاز iPad Pro للألعاب',
+    subtitle: 'شاشة 120Hz فائقة السرعة',
+    type: 'ipad',
+    iconColor: '#06B6D4'
+  },
+  { 
+    id: 'casillas', 
+    weight: 1, 
+    index: 3,
+    name: 'إيكر كاسياس 103',
+    subtitle: 'حارس أسطوري - إبيك بوستر ريال مدريد',
+    type: 'special_player',
+    iconColor: '#38BDF8'
+  },
+  { 
+    id: 'better_luck', 
+    weight: 97, 
+    index: 4,
+    name: 'حظ أوفر',
+    subtitle: 'حاول مجدداً في السحب القادم',
+    type: 'better_luck',
+    iconColor: '#94A3B8'
+  }
 ];
 
 export const COOLDOWN_24H_MS = 24 * 60 * 60 * 1000;
@@ -176,10 +222,18 @@ export class WheelDurableObject {
     }
 
     // 4. Validate prize configuration & pick weighted random
-    const customPrizes = Array.isArray(body?.prizes) ? body.prizes : null;
+    if (body?.prizes || body?.weights) {
+      return jsonResponse({
+        ok: false,
+        success: false,
+        code: 'CONFIGURATION_REJECTED',
+        error: 'Clients are strictly forbidden from specifying prizes or weights. Server is the sole Source of Truth.'
+      }, 400, request);
+    }
+    
     let selectedPrize: PrizeOption;
     try {
-      selectedPrize = selectWeightedPrize(customPrizes || DEFAULT_PRIZES);
+      selectedPrize = selectWeightedPrize(DEFAULT_PRIZES);
     } catch (err: any) {
       return jsonResponse({
         ok: false,

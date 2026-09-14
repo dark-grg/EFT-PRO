@@ -57,9 +57,9 @@ const BOOST_STEPS: BoostStep[] = [
   },
   {
     id: 4,
-    title: 'تثبيت الإطارات على 60 / 120 FPS',
+    title: 'تثبيت الأداء',
     description: 'إرشادات منع الهبوط المفاجئ للفريمات أثناء المباريات',
-    detail: 'FPS Target: 60/120',
+    detail: 'Performance Optimized',
     icon: Gauge
   },
   {
@@ -101,13 +101,21 @@ export const LagRemover: React.FC = () => {
       const result = await GameLauncher.openGame(6000);
       toast.dismiss('launching-toast');
 
-      if (result.opened || result.success) {
+      if (result.status === 'GAME_LAUNCHED' || result.opened) {
         toast.success('⚽ تم إطلاق لعبة eFootball بنجاح!', {
           icon: '🚀',
           duration: 4000
         });
+      } else if (result.status === 'GAME_NOT_INSTALLED') {
+        const errorMsg = 'لعبة eFootball غير مثبتة على هذا الجهاز. يرجى تثبيتها أولاً.';
+        setLaunchError(errorMsg);
+        toast.error(errorMsg, { duration: 5000 });
+      } else if (result.status === 'GAME_INSTALLED_BUT_NO_LAUNCHER') {
+         const errorMsg = 'تم العثور على اللعبة ولكن نظام أندرويد يمنع فتحها عبر هذا التطبيق (مشكلة أمنية).';
+         setLaunchError(errorMsg);
+         toast.error(errorMsg, { duration: 5000 });
       } else {
-        const errorMsg = result.message || 'تعذر فتح اللعبة. تأكد من تثبيت eFootball على جهازك.';
+        const errorMsg = result.message || 'تعذر فتح اللعبة. يرجى المحاولة يدوياً.';
         setLaunchError(errorMsg);
         toast.error(errorMsg, { duration: 5000 });
       }
@@ -233,25 +241,17 @@ export const LagRemover: React.FC = () => {
       {/* Real-time Game Benchmark Indicators */}
       <div className="grid grid-cols-3 gap-2">
         <Card className="p-3 bg-[#0B1221] border border-white/10 flex flex-col items-center text-center gap-1">
-          <Wifi size={18} className={isCompleted ? "text-emerald-400" : "text-amber-400"} />
+          <Wifi size={18} className="text-gray-500" />
           <span className="text-[10px] text-gray-400">بنج الخوادم (Ping)</span>
-          <span className="text-xs font-black text-white font-mono">
-            {isCompleted ? "24 ms ⚡" : isBoosting ? "45 ms" : "135 ms"}
-          </span>
-          <span className={`text-[9px] font-bold ${isCompleted ? "text-emerald-400" : "text-gray-500"}`}>
-            {isCompleted ? "خفيف جداً" : "متوسط"}
-          </span>
+          <span className="text-xs font-black text-gray-500 font-mono">N/A</span>
+          <span className="text-[9px] font-bold text-gray-600">غير متوفر</span>
         </Card>
 
         <Card className="p-3 bg-[#0B1221] border border-white/10 flex flex-col items-center text-center gap-1">
-          <Gauge size={18} className={isCompleted ? "text-emerald-400" : "text-cyan-400"} />
+          <Gauge size={18} className="text-gray-500" />
           <span className="text-[10px] text-gray-400">معدل الإطارات (FPS)</span>
-          <span className="text-xs font-black text-white font-mono">
-            {isCompleted ? "60 FPS 🔒" : isBoosting ? "55 FPS" : "38 FPS"}
-          </span>
-          <span className={`text-[9px] font-bold ${isCompleted ? "text-emerald-400" : "text-gray-500"}`}>
-            {isCompleted ? "ثابت ومستقر" : "تذبذب عالي"}
-          </span>
+          <span className="text-xs font-black text-gray-500 font-mono">N/A</span>
+          <span className="text-[9px] font-bold text-gray-600">غير متوفر</span>
         </Card>
 
         <Card className="p-3 bg-[#0B1221] border border-white/10 flex flex-col items-center text-center gap-1">

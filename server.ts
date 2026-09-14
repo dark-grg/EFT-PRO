@@ -297,10 +297,11 @@ app.post("/api/analyze-formation", async (req: Request, res: Response): Promise<
       };
     });
 
-    const canonicalResponse = {
+    const canonicalResponse: any = {
       isFormationScreenshot,
       isReliable,
       unreliableReason,
+      gameName: typeof parsedData?.gameName === 'string' && parsedData.gameName.trim() ? parsedData.gameName.trim() : null,
       formationName,
       tacticalRating,
       detectedPlayers,
@@ -311,6 +312,17 @@ app.post("/api/analyze-formation", async (req: Request, res: Response): Promise<
       weaknesses: Array.isArray(parsedData?.weaknesses) ? parsedData.weaknesses.filter((w: any) => typeof w === 'string' && w.trim()) : [],
       tacticalAdvice: Array.isArray(parsedData?.tacticalAdvice) ? parsedData.tacticalAdvice.filter((a: any) => typeof a === 'string' && a.trim()) : (Array.isArray(parsedData?.advice) ? parsedData.advice.filter((a: any) => typeof a === 'string' && a.trim()) : [])
     };
+
+    if (!canonicalResponse.isFormationScreenshot) {
+      canonicalResponse.isReliable = false;
+      canonicalResponse.unreliableReason = canonicalResponse.unreliableReason || 'الصورة المرفوعة ليست لقطة شاشة لتشكيلة كرة قدم صالحة.';
+    }
+
+    if (!Array.isArray(canonicalResponse.detectedPlayers) || canonicalResponse.detectedPlayers.length === 0) {
+      canonicalResponse.isReliable = false;
+      canonicalResponse.unreliableReason = 'لم يتم التعرف على أي لاعب من الصورة';
+      canonicalResponse.detectedPlayers = [];
+    }
 
     res.json(canonicalResponse);
   } catch (error: any) {

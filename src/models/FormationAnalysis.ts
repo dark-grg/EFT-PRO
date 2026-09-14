@@ -150,8 +150,8 @@ export function validateAndNormalizeVision(raw: RawVisionOutput): {
 /**
  * Infer tactical structure (e.g. 4-2-1-3) based on defensive, midfield, and forward player count
  */
-export function inferFormationFromPlayers(players: DetectedPlayer[]): string {
-  if (!players || players.length === 0) return '4-2-1-3';
+export function inferFormationFromPlayers(players: DetectedPlayer[]): string | null {
+  if (!players || players.length === 0) return null;
 
   let defenders = 0;
   let dmfs = 0;

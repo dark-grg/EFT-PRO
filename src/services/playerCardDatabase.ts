@@ -97,36 +97,41 @@ export class PlayerCardDatabaseService {
     this.initialized = true;
   }
 
+  public validatePlayerCard(c: any): boolean {
+    if (!c || c.source !== 'eFHUB') return false;
+    if (typeof c.id === 'string' && (c.id.includes('pesmaster') || c.id.includes('eflab') || c.id.includes('efhub-messi-105') || c.id.includes('efhub-messi-106') || c.id.includes('efhub-messi-100'))) return false;
+    if (!c.cardImageUrl || !c.cardImageUrl.startsWith('https://efimg.com/')) return false;
+    if (typeof c.maxOverall !== 'number' || c.maxOverall < 50 || c.maxOverall > 120) return false;
+    if (!c.cardId || typeof c.cardId !== 'string') return false;
+
+    // Purge cards where non-Messi player has Messi card ID or Messi card image
+    if (c.playerName !== 'Lionel Messi' && (
+      c.id?.includes('88032602496343') || 
+      c.cardImageUrl?.includes('88032602496343') ||
+      c.id?.includes('88030186577239') ||
+      c.cardImageUrl?.includes('88030186577239') ||
+      c.id?.includes('88037971205463') ||
+      c.cardImageUrl?.includes('88037971205463') ||
+      c.id?.includes('89129698205015') ||
+      c.cardImageUrl?.includes('89129698205015') ||
+      c.id?.includes('105774575525207') ||
+      c.cardImageUrl?.includes('105774575525207') ||
+      c.id?.includes('89062052470103') ||
+      c.cardImageUrl?.includes('89062052470103')
+    )) {
+      return false;
+    }
+    return true;
+  }
+
   private loadCardsFromStorage() {
     try {
       const data = localStorage.getItem(CARDS_STORAGE_KEY);
       let list = data ? JSON.parse(data) : [];
       if (Array.isArray(list)) {
         // Enforce removal of legacy, mock, or non-eFHUB cards, and cards with mismatched Messi images
-        const isInvalid = (c: any) => {
-          if (!c || c.source !== 'eFHUB') return true;
-          if (typeof c.id === 'string' && (c.id.includes('pesmaster') || c.id.includes('eflab'))) return true;
-          if (!c.cardImageUrl?.startsWith('https://efimg.com/')) return true;
-          // Purge cards where non-Messi player has Messi card ID or Messi card image
-          if (c.playerName !== 'Lionel Messi' && (
-            c.id?.includes('88032602496343') || 
-            c.cardImageUrl?.includes('88032602496343') ||
-            c.id?.includes('88030186577239') ||
-            c.cardImageUrl?.includes('88030186577239') ||
-            c.id?.includes('88037971205463') ||
-            c.cardImageUrl?.includes('88037971205463') ||
-            c.id?.includes('89129698205015') ||
-            c.cardImageUrl?.includes('89129698205015') ||
-            c.id?.includes('105774575525207') ||
-            c.cardImageUrl?.includes('105774575525207') ||
-            c.id?.includes('89062052470103') ||
-            c.cardImageUrl?.includes('89062052470103')
-          )) {
-            return true;
-          }
-          return false;
-        };
-
+        const isInvalid = (c: any) => !this.validatePlayerCard(c);
+        
         const hasInvalid = list.some(isInvalid);
         if (hasInvalid) {
           list = list.filter((c: any) => !isInvalid(c));
@@ -230,11 +235,21 @@ export class PlayerCardDatabaseService {
     });
 
     for (const card of providerResult.cards) {
+      if (!this.validatePlayerCard(card)) {
+        continue;
+      }
+
       const dedupKey = `${card.source}_${card.sourceCardId}_${card.sourceVersion}`.toLowerCase();
       
       if (existingMap.has(dedupKey)) {
-        // Update existing card data while preserving cardId
         const existingIdx = existingMap.get(dedupKey)!;
+        const existingCard = this.cardsCache[existingIdx];
+
+        if (existingCard.maxOverall !== card.maxOverall) {
+           console.warn(`CONFLICT FOUND FOR ${card.cardId}: maxOverall differs (${existingCard.maxOverall} vs ${card.maxOverall}). Keeping canonical DB record.`);
+           continue; // Reject conflicting record
+        }
+
         this.cardsCache[existingIdx] = {
           ...card,
           id: this.cardsCache[existingIdx].id, // strictly preserve cardId
@@ -583,9 +598,9 @@ export class PlayerCardDatabaseService {
     };
 
     // 1. Lionel Messi (eFHUB cards)
-    const cardMessiWC = findCard(['efhub-messi-105-bigtime-2022', '105899666447703'], c => c.playerName === 'Lionel Messi' && c.maxOverall >= 104);
-    const cardMessiBarca = findCard(['efhub-messi-106-epicbooster-2015', '89133456301399'], c => c.playerName === 'Lionel Messi' && c.maxOverall >= 105);
-    const cardMessiMiami = findCard(['efhub-messi-100-highlight-2024', '105584254786903'], c => c.playerName === 'Lionel Messi');
+    const cardMessiWC = findCard(['89062052470103', '105899666447703'], c => c.playerName === 'Lionel Messi' && c.maxOverall >= 102);
+    const cardMessiBarca = findCard(['89133456301399'], c => c.playerName === 'Lionel Messi' && c.maxOverall >= 101);
+    const cardMessiMiami = findCard(['105584254786903'], c => c.playerName === 'Lionel Messi');
 
     // 2. Matheus Cunha (eFHUB cards)
     const cardCunhaPOTW = findCard(['efhub-cunha-97-potw-2024', '105873896755947'], c => c.playerName === 'Matheus Cunha');

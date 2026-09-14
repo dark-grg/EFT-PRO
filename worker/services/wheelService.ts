@@ -213,7 +213,7 @@ export async function executeSpin(
     }
 
     // Weighted selection
-    const selectedPrize = selectWeightedPrize(options.prizes || DEFAULT_PRIZES);
+    const selectedPrize = selectWeightedPrize(DEFAULT_PRIZES);
     const nextSpinAt = now + COOLDOWN_24H_MS;
 
     const newState: WheelState = {

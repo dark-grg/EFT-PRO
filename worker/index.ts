@@ -6,7 +6,7 @@ import { Env } from './types';
 import { handleOptions } from './utils/cors';
 import { jsonResponse, errorResponse } from './utils/response';
 import { handleAnalyzeFormation } from './routes/formation';
-import { handleGetTime, handleGetWheelStatus, handlePostWheelSpin } from './routes/wheel';
+import { handleGetTime, handleGetWheelStatus, handlePostWheelSpin, handleGetWheelPrizes } from './routes/wheel';
 import { handleGetPlayerCards, handlePostEfhubParse, handlePostResyncPlayers } from './routes/players';
 
 // Export Durable Object class for Cloudflare Worker runtime binding
@@ -43,6 +43,13 @@ export default {
       }
 
       // 4. Lucky Wheel endpoints
+      if (pathname === '/api/wheel/prizes') {
+        if (request.method === 'GET') {
+          return handleGetWheelPrizes(request);
+        }
+        return errorResponse('Method Not Allowed', 405, request);
+      }
+
       if (pathname === '/api/wheel/status') {
         if (request.method === 'GET') {
           return await handleGetWheelStatus(request, env);
