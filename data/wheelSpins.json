@@ -1,0 +1,14 @@
+{
+  "test_device": {
+    "lastSpinAt": 1789389151008,
+    "nextSpinAt": 1789475551008
+  },
+  "device_audit_user_A_1789390564646": {
+    "lastSpinAt": 1789390564670,
+    "nextSpinAt": 1789476964670
+  },
+  "device_audit_user_B_1789390564646": {
+    "lastSpinAt": 1789390564686,
+    "nextSpinAt": 1789476964686
+  }
+}

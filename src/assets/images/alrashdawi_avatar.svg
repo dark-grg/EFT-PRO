@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <radialGradient id="bgRadial" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#FFD814" />
+      <stop offset="70%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
+    </radialGradient>
+    <linearGradient id="skinGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FCE5D8" />
+      <stop offset="50%" stop-color="#F3C5A8" />
+      <stop offset="100%" stop-color="#D89670" />
+    </linearGradient>
+    <linearGradient id="hairDark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2B2B2B" />
+      <stop offset="60%" stop-color="#181818" />
+      <stop offset="100%" stop-color="#0F0F0F" />
+    </linearGradient>
+    <linearGradient id="silverStreak" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="50%" stop-color="#E2E8F0" />
+      <stop offset="100%" stop-color="#94A3B8" />
+    </linearGradient>
+    <linearGradient id="headphoneCup" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#241442" />
+      <stop offset="50%" stop-color="#0F0A1C" />
+      <stop offset="100%" stop-color="#1E1138" />
+    </linearGradient>
+    <linearGradient id="neonPurple" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D946EF" />
+      <stop offset="50%" stop-color="#A855F7" />
+      <stop offset="100%" stop-color="#7E22CE" />
+    </linearGradient>
+    <linearGradient id="shirtWhite" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="70%" stop-color="#F8FAFC" />
+      <stop offset="100%" stop-color="#E2E8F0" />
+    </linearGradient>
+    <filter id="glowPurple" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Solid Bright Yellow Studio Background -->
+  <rect width="500" height="500" fill="url(#bgRadial)" />
+
+  <!-- Shoulders & White Shirt -->
+  <path d="M60 500 C60 390 130 350 250 350 C370 350 440 390 440 500 Z" fill="url(#shirtWhite)" />
+  
+  <!-- Crewneck Collar -->
+  <path d="M190 350 C190 395 310 395 310 350 Z" fill="none" stroke="#E2E8F0" stroke-width="12" />
+  <!-- Neck Shadow & Skin -->
+  <path d="M195 280 L195 365 C220 380 280 380 305 365 L305 280 Z" fill="url(#skinGrad)" />
+  <path d="M195 280 C230 310 270 310 305 280 L305 305 C270 325 230 325 195 305 Z" fill="#B4704B" opacity="0.4" />
+
+  <!-- Iraq Emblem / Badge on Chest -->
+  <g transform="translate(155, 410) scale(0.85)">
+    <path d="M0 0 L46 0 C46 30 35 55 23 68 C11 55 0 30 0 0 Z" fill="#0F172A" stroke="#000000" stroke-width="2.5" />
+    <!-- Red stripe -->
+    <path d="M5 6 L41 6 L41 18 L5 18 Z" fill="#DC2626" />
+    <!-- White stripe -->
+    <path d="M5 18 L41 18 L41 30 L5 30 Z" fill="#FFFFFF" />
+    <!-- Black stripe -->
+    <path d="M5 30 L41 30 C41 42 32 54 23 60 C14 54 5 42 5 30 Z" fill="#000000" />
+    <!-- Text 'OASI' at top -->
+    <text x="23" y="-4" font-family="Arial, sans-serif" font-size="8" font-weight="900" fill="#1E293B" text-anchor="middle">OASI</text>
+    <!-- Takbir in Green -->
+    <text x="23" y="26" font-family="sans-serif" font-size="7.5" font-weight="bold" fill="#16A34A" text-anchor="middle">الله أكبر</text>
+  </g>
+
+  <!-- Umbro / Brand Logo on Right Chest -->
+  <g transform="translate(340, 445) scale(0.7)">
+    <polygon points="0,10 15,0 30,10 15,20" fill="none" stroke="#1E293B" stroke-width="4" />
+    <polygon points="18,10 33,0 48,10 33,20" fill="none" stroke="#1E293B" stroke-width="4" />
+  </g>
+
+  <!-- Head Base / Jawline -->
+  <path d="M175 190 C165 260 200 320 250 320 C300 320 335 260 325 190 C320 140 180 140 175 190 Z" fill="url(#skinGrad)" />
+
+  <!-- Ears behind headphones -->
+  <ellipse cx="170" cy="225" rx="14" ry="22" fill="url(#skinGrad)" />
+  <ellipse cx="330" cy="225" rx="14" ry="22" fill="url(#skinGrad)" />
+
+  <!-- Full Groomed Beard and Mustache -->
+  <path d="M174 210 C168 280 205 322 250 322 C295 322 332 280 326 210 C322 245 305 295 250 295 C195 295 178 245 174 210 Z" fill="#171717" />
+  <!-- Chin shading & stubble fade -->
+  <path d="M215 285 C230 292 270 292 285 285 C275 315 225 315 215 285 Z" fill="#0A0A0A" />
+  <!-- Mustache -->
+  <path d="M210 262 C225 252 245 254 250 258 C255 254 275 252 290 262 C275 272 258 270 250 264 C242 270 225 272 210 262 Z" fill="#171717" />
+  <!-- Soul patch -->
+  <path d="M245 273 L255 273 L253 282 L247 282 Z" fill="#171717" />
+  <!-- Lips -->
+  <path d="M228 266 C238 263 262 263 272 266 C262 273 238 273 228 266 Z" fill="#C27453" opacity="0.8" />
+
+  <!-- Nose -->
+  <path d="M250 195 L244 240 L256 240 Z" fill="#B4704B" opacity="0.2" />
+  <path d="M242 241 C246 245 254 245 258 241" stroke="#854D2B" stroke-width="2.5" stroke-linecap="round" fill="none" />
+  <circle cx="240" cy="240" r="2" fill="#6E3C1E" opacity="0.6" />
+  <circle cx="260" cy="240" r="2" fill="#6E3C1E" opacity="0.6" />
+
+  <!-- Eyes & Eyebrows -->
+  <!-- Left Eyebrow -->
+  <path d="M190 182 C205 172 225 176 235 184" stroke="#18181B" stroke-width="6" stroke-linecap="round" fill="none" />
+  <!-- Right Eyebrow -->
+  <path d="M310 182 C295 172 275 176 265 184" stroke="#18181B" stroke-width="6" stroke-linecap="round" fill="none" />
+
+  <!-- Left Eye -->
+  <ellipse cx="214" cy="198" rx="13" ry="8" fill="#FFFFFF" />
+  <circle cx="215" cy="198" r="6" fill="#221711" />
+  <circle cx="213" cy="196" r="2" fill="#FFFFFF" />
+  <path d="M201 198 C208 190 222 190 227 198" stroke="#18181B" stroke-width="2.5" stroke-linecap="round" fill="none" />
+
+  <!-- Right Eye -->
+  <ellipse cx="286" cy="198" rx="13" ry="8" fill="#FFFFFF" />
+  <circle cx="285" cy="198" r="6" fill="#221711" />
+  <circle cx="283" cy="196" r="2" fill="#FFFFFF" />
+  <path d="M273 198 C278 190 292 190 299 198" stroke="#18181B" stroke-width="2.5" stroke-linecap="round" fill="none" />
+
+  <!-- Forehead and Hairline Shadow -->
+  <path d="M180 155 C210 130 290 130 320 155 Z" fill="#000000" opacity="0.15" />
+
+  <!-- Hair Base (Voluminous, Textured Dark Hair) -->
+  <path d="M165 185 C155 90 190 40 250 40 C310 40 345 90 335 185 C320 130 295 110 250 112 C205 110 180 130 165 185 Z" fill="url(#hairDark)" />
+  <!-- Additional Hair Waves & Strands -->
+  <path d="M175 130 C185 80 230 50 270 48 C240 60 210 85 195 125 Z" fill="#111111" />
+  <path d="M325 130 C315 80 270 50 230 48 C260 60 290 85 305 125 Z" fill="#111111" />
+
+  <!-- Distinctive Signature White/Silver Streak in Front Hair -->
+  <path d="M236 43 C242 41 268 46 272 92 C262 76 250 68 236 43 Z" fill="url(#silverStreak)" />
+  <path d="M228 55 C235 48 256 58 260 102 C252 86 240 78 228 55 Z" fill="#CBD5E1" />
+  <path d="M245 42 C248 40 262 43 265 75 C258 62 250 56 245 42 Z" fill="#FFFFFF" />
+
+  <!-- ================= GAMING HEADPHONES (BLACK & NEON PURPLE) ================= -->
+  <!-- Top Headband Arc -->
+  <path d="M140 195 C120 75 380 75 360 195" stroke="#18181B" stroke-width="22" stroke-linecap="round" fill="none" />
+  <path d="M155 160 C140 85 360 85 345 160" stroke="#27272A" stroke-width="12" stroke-linecap="round" fill="none" />
+  <!-- Metallic Adjustment Sliders -->
+  <rect x="130" y="180" width="12" height="24" rx="4" fill="#71717A" />
+  <rect x="358" y="180" width="12" height="24" rx="4" fill="#71717A" />
+
+  <!-- Left Ear Cup (Angled Over Ear) -->
+  <g transform="translate(110, 155)">
+    <!-- Outer Cup Shadow & Body -->
+    <ellipse cx="32" cy="65" rx="30" ry="52" fill="url(#headphoneCup)" stroke="#09090B" stroke-width="5" />
+    <!-- Vibrant Glowing Purple Inner Ring -->
+    <ellipse cx="32" cy="65" rx="20" ry="38" fill="none" stroke="url(#neonPurple)" stroke-width="7" filter="url(#glowPurple)" />
+    <ellipse cx="32" cy="65" rx="20" ry="38" fill="none" stroke="#E879F9" stroke-width="2" />
+    <!-- Center Pivot -->
+    <circle cx="32" cy="65" r="11" fill="#09090B" stroke="#3F3F46" stroke-width="2" />
+  </g>
+
+  <!-- Right Ear Cup (Angled Over Ear) -->
+  <g transform="translate(330, 155)">
+    <!-- Outer Cup Shadow & Body -->
+    <ellipse cx="30" cy="65" rx="30" ry="52" fill="url(#headphoneCup)" stroke="#09090B" stroke-width="5" />
+    <!-- Vibrant Glowing Purple Inner Ring -->
+    <ellipse cx="30" cy="65" rx="20" ry="38" fill="none" stroke="url(#neonPurple)" stroke-width="7" filter="url(#glowPurple)" />
+    <ellipse cx="30" cy="65" rx="20" ry="38" fill="none" stroke="#E879F9" stroke-width="2" />
+    <!-- Center Pivot -->
+    <circle cx="30" cy="65" r="11" fill="#09090B" stroke="#3F3F46" stroke-width="2" />
+  </g>
+
+</svg>

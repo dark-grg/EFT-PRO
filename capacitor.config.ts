@@ -1,0 +1,28 @@
+import type { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+  appId: 'com.pes.arena',
+  appName: 'PES ARENA',
+  webDir: 'dist',
+  server: {
+    androidScheme: 'https',
+    cleartext: false
+  },
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 1200,
+      launchAutoHide: true,
+      backgroundColor: '#070707',
+      showSpinner: false,
+      androidScaleType: 'CENTER_CROP',
+      splashFullScreen: true,
+      splashImmersive: true
+    },
+    StatusBar: {
+      style: 'DARK',
+      backgroundColor: '#070707'
+    }
+  }
+};
+
+export default config;

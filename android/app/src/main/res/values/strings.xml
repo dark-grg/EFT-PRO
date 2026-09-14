@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PES ARENA</string>
+    <string name="title_activity_main">PES ARENA</string>
+    <string name="package_name">com.pes.arena</string>
+    <string name="custom_url_scheme">com.pes.arena</string>
+</resources>

@@ -1,0 +1,24 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Android specific
+android/.gradle/
+android/local.properties
+android/**/build/
+android/captures/
+android/.idea/
+android/app/build/
+
+# Signing keys & secrets
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+
