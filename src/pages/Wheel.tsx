@@ -239,23 +239,38 @@ export const Wheel: React.FC = () => {
       const spinResult = await WheelService.executeSpin();
       setCooldown(WheelService.getCooldownStatus());
 
+      if (import.meta.env.DEV) {
+        console.log('WHEEL RESPONSE KEYS:', Object.keys(spinResult));
+      }
+
       if (navigator.vibrate) navigator.vibrate([20, 30, 20]);
 
-      const targetIndex = Math.min(WHEEL_PRIZES.length - 1, Math.max(0, spinResult.prizeIndex));
+      // DEFENSIVE PRIZE RESOLUTION:
+      // Look up prize strictly by authoritative server prizeId
+      const targetIndex = WHEEL_PRIZES.findIndex(p => p.id === spinResult.prizeId);
+
+      if (targetIndex < 0 || !Number.isFinite(targetIndex)) {
+        throw new Error('الجائزة التي أعادها الخادم غير موجودة في قائمة العجلة.');
+      }
+
+      const selected = WHEEL_PRIZES[targetIndex];
 
       // Each slice is 72 degrees (360 / 5)
       const sliceAngle = 360 / WHEEL_PRIZES.length; // 72 deg
       const targetSliceCenter = targetIndex * sliceAngle + sliceAngle / 2;
       
       const fullSpins = 360 * 5; // 5 full turns
-      const currentRotMod = rotation % 360;
-      const finalAngle = rotation + (fullSpins - currentRotMod) + (360 - targetSliceCenter);
+      const currentRotMod = Number.isFinite(rotation) ? (rotation % 360) : 0;
+      const finalAngle = (Number.isFinite(rotation) ? rotation : 0) + (fullSpins - currentRotMod) + (360 - targetSliceCenter);
+
+      if (!Number.isFinite(finalAngle)) {
+        throw new Error('زاوية دوران العجلة غير صالحة.');
+      }
 
       setRotation(finalAngle);
 
       setTimeout(() => {
         setIsSpinning(false);
-        const selected = WHEEL_PRIZES[targetIndex];
         setWonPrize(selected);
         setHistory((prev) => [
           { prize: selected, time: 'الآن' },

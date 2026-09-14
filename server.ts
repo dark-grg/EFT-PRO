@@ -245,7 +245,74 @@ app.post("/api/analyze-formation", async (req: Request, res: Response): Promise<
       }
     }
 
-    res.json(parsedData);
+    const isFormationScreenshot = parsedData?.isFormationScreenshot !== false;
+    const isReliable = parsedData?.isReliable !== false && isFormationScreenshot;
+    const unreliableReason = isReliable 
+      ? null 
+      : (parsedData?.unreliableReason || (!isFormationScreenshot ? 'الصورة المرفوعة ليست لقطة شاشة لتشكيلة كرة قدم صالحة.' : 'لم أتمكن من قراءة التشكيلة بشكل موثوق، يرجى رفع صورة أوضح.'));
+
+    const formationName = typeof parsedData?.formationName === 'string' && parsedData.formationName.trim()
+      ? parsedData.formationName.trim()
+      : (typeof parsedData?.formation === 'string' && parsedData.formation.trim() ? parsedData.formation.trim() : null);
+
+    let tacticalRating: number | null = null;
+    if (typeof parsedData?.tacticalRating === 'number' && Number.isFinite(parsedData.tacticalRating)) {
+      tacticalRating = Math.round(parsedData.tacticalRating);
+    } else if (typeof parsedData?.tacticalScore === 'number' && Number.isFinite(parsedData.tacticalScore)) {
+      tacticalRating = Math.round(parsedData.tacticalScore);
+    }
+
+    const rawPlayers = Array.isArray(parsedData?.detectedPlayers) 
+      ? parsedData.detectedPlayers 
+      : (Array.isArray(parsedData?.players) ? parsedData.players : []);
+
+    const detectedPlayers = rawPlayers.map((p: any) => {
+      const name = String(p?.name || p?.playerName || '').trim() || 'unknown';
+      const position = String(p?.position || p?.pos || 'CF').trim().toUpperCase();
+      
+      let rating: number | null = null;
+      if (typeof p?.rating === 'number' && Number.isFinite(p.rating)) {
+        rating = Math.round(p.rating);
+      } else if (typeof p?.overall === 'number' && Number.isFinite(p.overall)) {
+        rating = Math.round(p.overall);
+      }
+
+      const pitchX = typeof p?.pitchX === 'number' && Number.isFinite(p.pitchX) 
+        ? p.pitchX 
+        : (typeof p?.x === 'number' && Number.isFinite(p.x) ? p.x : 50);
+
+      const pitchY = typeof p?.pitchY === 'number' && Number.isFinite(p.pitchY) 
+        ? p.pitchY 
+        : (typeof p?.y === 'number' && Number.isFinite(p.y) ? p.y : 50);
+
+      const isClear = p?.isClear !== false && name !== 'unknown';
+
+      return {
+        name,
+        position,
+        rating,
+        pitchX,
+        pitchY,
+        isClear
+      };
+    });
+
+    const canonicalResponse = {
+      isFormationScreenshot,
+      isReliable,
+      unreliableReason,
+      formationName,
+      tacticalRating,
+      detectedPlayers,
+      coachName: typeof parsedData?.coachName === 'string' && parsedData.coachName.trim() ? parsedData.coachName.trim() : (typeof parsedData?.coach === 'string' && parsedData.coach.trim() ? parsedData.coach.trim() : null),
+      playstyle: typeof parsedData?.playstyle === 'string' && parsedData.playstyle.trim() ? parsedData.playstyle.trim() : (typeof parsedData?.teamPlaystyle === 'string' && parsedData.teamPlaystyle.trim() ? parsedData.teamPlaystyle.trim() : null),
+      teamStrength: typeof parsedData?.teamStrength === 'string' && parsedData.teamStrength.trim() ? parsedData.teamStrength.trim() : (typeof parsedData?.strength === 'string' && parsedData.strength.trim() ? parsedData.strength.trim() : null),
+      strengths: Array.isArray(parsedData?.strengths) ? parsedData.strengths.filter((s: any) => typeof s === 'string' && s.trim()) : [],
+      weaknesses: Array.isArray(parsedData?.weaknesses) ? parsedData.weaknesses.filter((w: any) => typeof w === 'string' && w.trim()) : [],
+      tacticalAdvice: Array.isArray(parsedData?.tacticalAdvice) ? parsedData.tacticalAdvice.filter((a: any) => typeof a === 'string' && a.trim()) : (Array.isArray(parsedData?.advice) ? parsedData.advice.filter((a: any) => typeof a === 'string' && a.trim()) : [])
+    };
+
+    res.json(canonicalResponse);
   } catch (error: any) {
     console.error("Error analyzing formation image:", error);
     res.status(500).json({

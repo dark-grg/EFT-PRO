@@ -522,9 +522,11 @@ export const FormationReader: React.FC = () => {
                   </span>
                   <div className="flex items-baseline gap-1 mt-1">
                     <span className="text-2xl font-black text-cyan-300 font-mono">
-                      {analysisData.tacticalRating ?? 85}
+                      {typeof analysisData.tacticalRating === 'number' ? analysisData.tacticalRating : 'غير متاح'}
                     </span>
-                    <span className="text-xs text-gray-400 font-mono">/100</span>
+                    {typeof analysisData.tacticalRating === 'number' && (
+                      <span className="text-xs text-gray-400 font-mono">/100</span>
+                    )}
                   </div>
                   {analysisData.teamStrength && (
                     <span className="text-[10px] text-gray-400 mt-1">
@@ -553,13 +555,23 @@ export const FormationReader: React.FC = () => {
 
             {/* 2. Tactical Pitch Board - رسم الخطة على الملعب */}
             <div className="rounded-3xl p-5 bg-[#0d0d12]/90 border border-emerald-500/30 backdrop-blur-xl shadow-2xl">
-              <TacticalPitchBoard
-                formationName={analysisData.formationName}
-                playstyle={analysisData.playstyle}
-                coachName={analysisData.coachName}
-                players={analysisData.detectedPlayers || []}
-                tacticalRating={analysisData.tacticalRating}
-              />
+              {(!analysisData.detectedPlayers || analysisData.detectedPlayers.length === 0) ? (
+                <div className="flex flex-col items-center justify-center py-10 text-center gap-3">
+                  <span className="text-4xl">⚠️</span>
+                  <p className="text-gray-300 font-medium">لم يتم التعرف على اللاعبين</p>
+                  {!analysisData.formationName && (
+                    <p className="text-gray-400 text-sm mt-1">لم يتم التعرف على التشكيلة</p>
+                  )}
+                </div>
+              ) : (
+                <TacticalPitchBoard
+                  formationName={analysisData.formationName}
+                  playstyle={analysisData.playstyle}
+                  coachName={analysisData.coachName}
+                  players={analysisData.detectedPlayers}
+                  tacticalRating={analysisData.tacticalRating}
+                />
+              )}
             </div>
 
             {/* 3. Strengths (نقاط القوة) */}

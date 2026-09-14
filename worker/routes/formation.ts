@@ -78,10 +78,110 @@ export async function handleAnalyzeFormation(request: Request, env: Env): Promis
 }`;
 
   try {
-    const analysisResult = await analyzeFormationWithGemini(apiKey, cleanBase64, prompt, systemInstruction);
-    return jsonResponse(analysisResult, 200, request);
+    const rawResult = await analyzeFormationWithGemini(apiKey, cleanBase64, prompt, systemInstruction);
+    const canonicalResult = normalizeFormationResult(rawResult);
+    return jsonResponse(canonicalResult, 200, request);
   } catch (error: any) {
     const msg = error?.message || 'تعذر فحص الصورة عبر خوادم الذكاء الاصطناعي.';
     return errorResponse(msg, 500, request);
   }
+}
+
+/**
+ * Normalizes any Gemini AI response into the exact canonical schema
+ */
+export function normalizeFormationResult(raw: any) {
+  const isFormationScreenshot = raw?.isFormationScreenshot !== false;
+  const isReliable = raw?.isReliable !== false && isFormationScreenshot;
+  const unreliableReason = isReliable 
+    ? null 
+    : (raw?.unreliableReason || (!isFormationScreenshot ? 'الصورة المرفوعة ليست لقطة شاشة لتشكيلة كرة قدم صالحة.' : 'لم أتمكن من قراءة التشكيلة بشكل موثوق، يرجى رفع صورة أوضح.'));
+
+  // Formation Name normalization (formation -> formationName)
+  const formationName = typeof raw?.formationName === 'string' && raw.formationName.trim()
+    ? raw.formationName.trim()
+    : (typeof raw?.formation === 'string' && raw.formation.trim() ? raw.formation.trim() : null);
+
+  // Tactical Rating (must be genuine tactical rating, not overall rating)
+  let tacticalRating: number | null = null;
+  if (typeof raw?.tacticalRating === 'number' && Number.isFinite(raw.tacticalRating)) {
+    tacticalRating = Math.round(raw.tacticalRating);
+  } else if (typeof raw?.tacticalScore === 'number' && Number.isFinite(raw.tacticalScore)) {
+    tacticalRating = Math.round(raw.tacticalScore);
+  }
+
+  // Players normalization (players -> detectedPlayers)
+  const rawPlayers = Array.isArray(raw?.detectedPlayers) 
+    ? raw.detectedPlayers 
+    : (Array.isArray(raw?.players) ? raw.players : []);
+
+  const detectedPlayers = rawPlayers.map((p: any) => {
+    const name = String(p?.name || p?.playerName || '').trim() || 'unknown';
+    const position = String(p?.position || p?.pos || 'CF').trim().toUpperCase();
+    
+    let rating: number | null = null;
+    if (typeof p?.rating === 'number' && Number.isFinite(p.rating)) {
+      rating = Math.round(p.rating);
+    } else if (typeof p?.overall === 'number' && Number.isFinite(p.overall)) {
+      rating = Math.round(p.overall);
+    }
+
+    const pitchX = typeof p?.pitchX === 'number' && Number.isFinite(p.pitchX) 
+      ? p.pitchX 
+      : (typeof p?.x === 'number' && Number.isFinite(p.x) ? p.x : 50);
+
+    const pitchY = typeof p?.pitchY === 'number' && Number.isFinite(p.pitchY) 
+      ? p.pitchY 
+      : (typeof p?.y === 'number' && Number.isFinite(p.y) ? p.y : 50);
+
+    const isClear = p?.isClear !== false && name !== 'unknown';
+
+    return {
+      name,
+      position,
+      rating,
+      pitchX,
+      pitchY,
+      isClear
+    };
+  });
+
+  const coachName = typeof raw?.coachName === 'string' && raw.coachName.trim() 
+    ? raw.coachName.trim() 
+    : (typeof raw?.coach === 'string' && raw.coach.trim() ? raw.coach.trim() : null);
+
+  const playstyle = typeof raw?.playstyle === 'string' && raw.playstyle.trim() 
+    ? raw.playstyle.trim() 
+    : (typeof raw?.teamPlaystyle === 'string' && raw.teamPlaystyle.trim() ? raw.teamPlaystyle.trim() : null);
+
+  const teamStrength = typeof raw?.teamStrength === 'string' && raw.teamStrength.trim()
+    ? raw.teamStrength.trim()
+    : (typeof raw?.strength === 'string' && raw.strength.trim() ? raw.strength.trim() : null);
+
+  const strengths = Array.isArray(raw?.strengths) 
+    ? raw.strengths.filter((s: any) => typeof s === 'string' && s.trim()) 
+    : [];
+
+  const weaknesses = Array.isArray(raw?.weaknesses) 
+    ? raw.weaknesses.filter((w: any) => typeof w === 'string' && w.trim()) 
+    : [];
+
+  const tacticalAdvice = Array.isArray(raw?.tacticalAdvice) 
+    ? raw.tacticalAdvice.filter((a: any) => typeof a === 'string' && a.trim()) 
+    : (Array.isArray(raw?.advice) ? raw.advice.filter((a: any) => typeof a === 'string' && a.trim()) : []);
+
+  return {
+    isFormationScreenshot,
+    isReliable,
+    unreliableReason,
+    formationName,
+    tacticalRating,
+    detectedPlayers,
+    coachName,
+    playstyle,
+    teamStrength,
+    strengths,
+    weaknesses,
+    tacticalAdvice
+  };
 }

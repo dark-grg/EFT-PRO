@@ -40,6 +40,10 @@ export const formationApi = {
       45000 // 45s timeout for Gemini Vision processing
     );
 
+    if (import.meta.env.DEV) {
+      console.log('FORMATION RESPONSE KEYS:', Object.keys(result));
+    }
+
     return result;
   }
 };

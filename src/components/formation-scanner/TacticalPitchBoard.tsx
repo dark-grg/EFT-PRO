@@ -13,11 +13,11 @@ export interface PitchPlayerItem {
 }
 
 interface TacticalPitchBoardProps {
-  formationName?: string;
-  playstyle?: string;
-  coachName?: string;
+  formationName?: string | null;
+  playstyle?: string | null;
+  coachName?: string | null;
   players?: PitchPlayerItem[];
-  tacticalRating?: number;
+  tacticalRating?: number | null;
 }
 
 // Position categorized colors
@@ -151,11 +151,11 @@ function getFallbackCoordinates(
 }
 
 export const TacticalPitchBoard: React.FC<TacticalPitchBoardProps> = ({
-  formationName = '4-2-1-3',
+  formationName = 'غير محدد',
   playstyle,
   coachName,
   players = [],
-  tacticalRating = 85
+  tacticalRating
 }) => {
   const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number | null>(null);
 
