@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core';
+
 /**
  * Unified API Client for EFT PRO
  * Handles request timeouts, JSON parsing, error normalization, and Android WebView connectivity.
@@ -24,30 +26,58 @@ export class ApiError extends Error {
 
 const PRODUCTION_WORKER_URL = 'https://eft-pro.grg0.workers.dev';
 
+/**
+ * Detects whether the app is executing inside a Capacitor native app wrapper (Android / iOS).
+ * On Android Capacitor, the WebView scheme is https://localhost (with no port) or capacitor://.
+ */
+export const isNativeApp = (): boolean => {
+  if (typeof window === 'undefined') return false;
+
+  try {
+    if (Capacitor.isNativePlatform()) {
+      return true;
+    }
+  } catch {}
+
+  const origin = window.location.origin || '';
+  const hostname = window.location.hostname || '';
+  const protocol = window.location.protocol || '';
+
+  // Android Capacitor uses https://localhost (no port), iOS uses capacitor://localhost
+  if (
+    protocol === 'capacitor:' ||
+    protocol === 'file:' ||
+    origin.startsWith('capacitor://') ||
+    origin.startsWith('file://') ||
+    (hostname === 'localhost' && !window.location.port) ||
+    origin === 'https://localhost' ||
+    origin === 'http://localhost'
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
 const getFullUrl = (endpoint: string): string => {
   if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
     return endpoint;
   }
-  
+
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+  // 1. In native Android/iOS APK, ALWAYS route API requests to the production Cloudflare worker
+  if (isNativeApp()) {
+    return `${PRODUCTION_WORKER_URL}${cleanEndpoint}`;
+  }
+
+  // 2. If explicitly configured in env, use it
   const envBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
-  
-  // If explicitly configured in env, use it
   if (envBaseUrl) {
-    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     return `${envBaseUrl}${cleanEndpoint}`;
   }
 
-  // If in browser web mode on the same domain (e.g. dev proxy or deployed applet), use relative endpoint
-  if (typeof window !== 'undefined' && window.location && window.location.origin) {
-    const origin = window.location.origin;
-    if (origin.startsWith('http://localhost') || origin.startsWith('capacitor://') || origin.startsWith('file://')) {
-      // In Capacitor native app, route directly to the Cloudflare production worker
-      const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-      return `${PRODUCTION_WORKER_URL}${cleanEndpoint}`;
-    }
-  }
-
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  // 3. In web preview (e.g. dev server / Cloud Run container), use relative endpoint (handled by Express server.ts)
   return cleanEndpoint;
 };
 
