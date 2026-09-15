@@ -32,10 +32,10 @@ export async function handleAnalyzeFormation(request: Request, env: Env): Promis
 قواعد صارمة لا تقبل الاستثناء:
 1. تحقق أولاً هل الصورة تمثل لقطة شاشة حقيقية لخطة لعب / تشكيلة كرة قدم ('isFormationScreenshot': true أو false). إذا لم تكن كذلك، اجعل 'isReliable': false واجعل 'tacticalRating': null وضع السبب في 'unreliableReason'.
 2. إذا كانت الصورة غير واضحة، مشوشة، مقطوعة، أو لم تظهر فيها بطاقات اللاعبين أو اسم التشكيلة، اجعل 'isReliable': false واجعل 'tacticalRating': null و 'unreliableReason': "لم أتمكن من قراءة التشكيلة بشكل موثوق، يرجى رفع صورة أوضح لخطة اللعب."
-3. استخرج التشكيلة المستخدمة (مثل '4-2-1-3', '4-3-3', '4-2-2-2', '5-3-2', '4-1-2-3', '3-2-2-3', '4-4-2'). إذا لم تجد اسم التشكيلة مكتوباً صراحة بنص الشاشة، فاحسب عدد اللاعبين في كل خط (دفاع - وسط - هجوم) واستنتج التشكيلة بدقة هندسية ولا تترك formationName فارغاً أو غير محدد إذا كانت لقطة شاشة خطة لعب.
+3. استخرج التشكيلة المستخدمة (مثل '4-2-1-3', '4-3-3', '4-2-2-2', '5-3-2', '4-1-2-3', '3-2-2-3', '4-4-2'). إذا لم تجد اسم التشكيلة مكتوباً صراحة بنص الشاشة، فاحسب عدد اللاعبين في كل خط (دفاع - وسط - هجوم) واستنتج التشكيلة بدقة هندسية، أو اجعلها null إذا تعذر الاستنتاج، لكن لا تمسح اللاعبين.
 4. استخرج اسم المدرب (Coach) وأسلوب اللعب (Team Playstyle) مثل 'Quick Counter', 'Possession Game', 'Long Ball Counter', 'Out Wide' إن كانت ظاهرة بالصورة، وإلا اتركها فارغة "".
 5. استخرج قوة الفريق أو التقييم الظاهر (Team Strength / Rating) إن وجد.
-6. إذا كانت التشكيلة مقروءة بنجاح، قيم التشكيلة تكتيكياً بناءً على توازن الخطوط والترابط (tacticalRating من 0 إلى 100). أما إذا لم تكن واضحة أو لم تُرصد بطاقات اللاعبين، فيجب جعل tacticalRating: null منعاً باتاً لوضع أرقام افتراضية.
+6. إذا كانت التشكيلة مقروءة بنجاح، قيم التشكيلة تكتيكياً بناءً على توازن الخطوط والترابط (tacticalRating من 0 إلى 100). أما إذا لم تكن كافية، اجعل tacticalRating: null، وممنوع منعاً باتاً وضع 85 أو أي رقم عشوائي.
 7. استخرج نقاط القوة الحقيقية للتشكيلة المحددة (strengths: 3 إلى 4 نقاط باللغة العربية بناءً على مراكز اللاعبين وأسلوب اللعب المكتشف).
 8. استخرج نقاط الضعف والثغرات التكتيكية (weaknesses: 3 إلى 4 نقاط باللغة العربية مثل المساحات خلف الأظهرة، ضعف المساندة، إلخ).
 9. قدم نصائح تكتيكية دقيقة وقابلة للتطبيق (tacticalAdvice: 3 إلى 4 نصائح باللغة العربية).
@@ -48,7 +48,7 @@ export async function handleAnalyzeFormation(request: Request, env: Env): Promis
       * pitchX: موضع اللاعب الأفقي بالنسبة المئوية في الملعب (0 = أقصى اليسار، 50 = المنتصف، 100 = أقصى اليمين).
       * pitchY: موضع اللاعب الرأسي بالنسبة المئوية في الملعب (0 = خط الهجوم العلوي، 50 = دائرة السنتر، 100 = منطقة حارس المرمى السفلية).
 11. ممنوع منعاً باتاً اختراع أي اسم لاعب أو تقييم. الالتزام بالحقيقة المرئية في الصورة فقط.
-12. إذا لم تجد لاعبين أو كانت التشكيلة غير محددة: اجعل isReliable: false واجعل tacticalRating: null.
+12. فصل التعرف على اللاعبين عن اسم التشكيلة: إذا تم رصد 3 لاعبين على الأقل ومواقعهم واضحة، فاجعل isReliable: true حتى لو كان formationName فارغاً أو null.
 13. الرد يجب أن يكون بصيغة JSON نقية ومطابقة للمخطط التالي فقط.`;
 
   const prompt = `افحص لقطة شاشة التشكيلة بعناية تامة وأرجع كائن JSON بالهيكل التالي:
@@ -211,6 +211,66 @@ export function normalizeFormationResult(raw: any) {
   return validateFormationResult(canonical);
 }
 
+/**
+ * Infer tactical structure (e.g. 4-2-1-3, 4-3-3, 4-2-2-2) based on pitch positions
+ */
+export function inferFormationFromPlayers(players: any[]): string | null {
+  if (!Array.isArray(players) || players.length < 3) return null;
+
+  let defenders = 0;
+  let dmfs = 0;
+  let cmfs = 0;
+  let amfs = 0;
+  let forwards = 0;
+
+  for (const p of players) {
+    const pos = String(p?.position || p?.role || '').trim().toUpperCase();
+    if (pos.includes('GK') || pos === 'حارس') {
+      continue;
+    } else if (pos.includes('CB') || pos.includes('LB') || pos.includes('RB') || pos.includes('LWB') || pos.includes('RWB') || pos === 'DEF') {
+      defenders++;
+    } else if (pos.includes('DMF')) {
+      dmfs++;
+    } else if (pos.includes('AMF')) {
+      amfs++;
+    } else if (pos.includes('CMF') || pos.includes('LMF') || pos.includes('RMF') || pos === 'MID') {
+      cmfs++;
+    } else if (pos.includes('CF') || pos.includes('SS') || pos.includes('LWF') || pos.includes('RWF') || pos === 'FWD') {
+      forwards++;
+    } else {
+      // Coordinate fallback if position unknown (pitchY: 0=attack/top, 100=defense/bottom)
+      const y = typeof p?.pitchY === 'number' ? p.pitchY : (typeof p?.y === 'number' ? p.y : 50);
+      if (y >= 68) defenders++;
+      else if (y >= 35) cmfs++;
+      else forwards++;
+    }
+  }
+
+  const mids = dmfs + cmfs + amfs;
+
+  // Infer well-known formations
+  if (defenders > 0 && mids > 0 && forwards > 0) {
+    if (defenders === 4 && dmfs === 2 && amfs === 1 && forwards === 3) return '4-2-1-3';
+    if (defenders === 4 && dmfs === 1 && (cmfs + amfs) === 2 && forwards === 3) return '4-3-3';
+    if (defenders === 4 && dmfs === 2 && (cmfs + amfs) === 2 && forwards === 2) return '4-2-2-2';
+    if (defenders === 4 && (dmfs + cmfs) === 2 && amfs === 3 && forwards === 1) return '4-2-3-1';
+    if (defenders === 4 && mids === 4 && forwards === 2) return '4-4-2';
+    if (defenders === 3 && dmfs === 2 && (cmfs + amfs) === 4 && forwards === 1) return '3-2-4-1';
+    if (defenders === 3 && mids === 5 && forwards === 2) return '3-5-2';
+    if (defenders === 5 && mids === 3 && forwards === 2) return '5-3-2';
+    if (defenders === 5 && mids === 2 && forwards === 3) return '5-2-3';
+
+    if (dmfs > 0 && amfs > 0) {
+      return `${defenders}-${dmfs}-${amfs}-${forwards}`;
+    }
+    return `${defenders}-${mids}-${forwards}`;
+  } else if (defenders > 0 && mids > 0) {
+    return `${defenders}-${mids}`;
+  }
+
+  return null;
+}
+
 export function validateFormationResult(result: any) {
   const UNRELIABLE_MSG = 'لم أتمكن من قراءة التشكيلة بشكل موثوق، يرجى رفع صورة أوضح.';
 
@@ -219,46 +279,63 @@ export function validateFormationResult(result: any) {
     result.isReliable = false;
     result.unreliableReason = UNRELIABLE_MSG;
     result.formationName = null;
+    result.formationInferred = false;
     result.tacticalRating = null;
     result.detectedPlayers = [];
     return result;
   }
 
   const validPlayersCount = Array.isArray(result.detectedPlayers) ? result.detectedPlayers.length : 0;
-  const hasFormationName = typeof result.formationName === 'string' && result.formationName.trim().length > 0;
 
-  // 2. Strict check: Missing players OR missing formation name -> isReliable = false, tacticalRating = null
-  if (validPlayersCount === 0 || !hasFormationName) {
-    result.isReliable = false;
-    result.unreliableReason = UNRELIABLE_MSG;
-    result.formationName = null;
-    result.tacticalRating = null; // Strictly null! Never default to 85 or any random score
-    result.detectedPlayers = [];
-    return result;
-  }
-
-  // 3. Incomplete detection (less than 3 players)
+  // 2. Incomplete or missing players (less than 3 players detected)
   if (validPlayersCount < 3) {
     result.isReliable = false;
     result.unreliableReason = UNRELIABLE_MSG;
     result.formationName = null;
+    result.formationInferred = false;
     result.tacticalRating = null;
     result.detectedPlayers = [];
     return result;
   }
 
-  // 4. Marked unreliable by AI model
-  if (result.isReliable === false) {
-    result.isReliable = false;
-    result.unreliableReason = UNRELIABLE_MSG;
-    result.formationName = null;
-    result.tacticalRating = null;
-    result.detectedPlayers = [];
-    return result;
-  }
-
-  // Reliable successful analysis
+  // 3. Player detection is valid (validPlayersCount >= 3)
+  // FORMATION NAME IS NOT REQUIRED for player detection!
   result.isReliable = true;
   result.unreliableReason = null;
+
+  // If formationName is not present, attempt to infer it from pitch positions
+  const hasFormationName = typeof result.formationName === 'string' && result.formationName.trim().length > 0;
+  if (!hasFormationName) {
+    const inferred = inferFormationFromPlayers(result.detectedPlayers);
+    if (inferred) {
+      result.formationName = inferred;
+      result.formationInferred = true;
+    } else {
+      result.formationName = null;
+      result.formationInferred = false;
+    }
+  } else {
+    result.formationInferred = false;
+  }
+
+  // 4. Tactical Rating: never default to 85 or any arbitrary number!
+  // If provided and valid (1-100), keep it. If missing/invalid, calculate from genuine player ratings if available, else null.
+  if (
+    typeof result.tacticalRating !== 'number' ||
+    !Number.isFinite(result.tacticalRating) ||
+    result.tacticalRating <= 0 ||
+    result.tacticalRating > 100
+  ) {
+    const ratedPlayers = result.detectedPlayers.filter(
+      (p: any) => typeof p?.rating === 'number' && Number.isFinite(p.rating) && p.rating > 0 && p.rating <= 120
+    );
+    if (ratedPlayers.length >= 5) {
+      const avg = ratedPlayers.reduce((acc: number, p: any) => acc + p.rating, 0) / ratedPlayers.length;
+      result.tacticalRating = Math.min(100, Math.round(avg));
+    } else {
+      result.tacticalRating = null;
+    }
+  }
+
   return result;
 }

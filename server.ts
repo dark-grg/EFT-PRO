@@ -334,37 +334,85 @@ app.post("/api/analyze-formation", async (req: Request, res: Response): Promise<
     };
 
     const validPlayersCount = Array.isArray(detectedPlayers) ? detectedPlayers.length : 0;
-    const hasFormationName = typeof formationName === 'string' && formationName.trim().length > 0;
-
     const UNRELIABLE_MSG = 'لم أتمكن من قراءة التشكيلة بشكل موثوق، يرجى رفع صورة أوضح.';
 
     if (!isFormationScreenshot) {
       canonicalResponse.isReliable = false;
       canonicalResponse.unreliableReason = UNRELIABLE_MSG;
       canonicalResponse.formationName = null;
-      canonicalResponse.tacticalRating = null;
-      canonicalResponse.detectedPlayers = [];
-    } else if (validPlayersCount === 0 || !hasFormationName) {
-      canonicalResponse.isReliable = false;
-      canonicalResponse.unreliableReason = UNRELIABLE_MSG;
-      canonicalResponse.formationName = null;
+      canonicalResponse.formationInferred = false;
       canonicalResponse.tacticalRating = null;
       canonicalResponse.detectedPlayers = [];
     } else if (validPlayersCount < 3) {
       canonicalResponse.isReliable = false;
       canonicalResponse.unreliableReason = UNRELIABLE_MSG;
       canonicalResponse.formationName = null;
-      canonicalResponse.tacticalRating = null;
-      canonicalResponse.detectedPlayers = [];
-    } else if (isReliable === false) {
-      canonicalResponse.isReliable = false;
-      canonicalResponse.unreliableReason = UNRELIABLE_MSG;
-      canonicalResponse.formationName = null;
+      canonicalResponse.formationInferred = false;
       canonicalResponse.tacticalRating = null;
       canonicalResponse.detectedPlayers = [];
     } else {
+      // Valid player detection (>= 3 players) - FORMATION NAME IS NOT REQUIRED
       canonicalResponse.isReliable = true;
       canonicalResponse.unreliableReason = null;
+
+      const hasFormationName = typeof formationName === 'string' && formationName.trim().length > 0;
+      if (!hasFormationName) {
+        // Infer formation from players
+        let defenders = 0, dmfs = 0, cmfs = 0, amfs = 0, forwards = 0;
+        for (const p of detectedPlayers) {
+          const pos = String(p?.position || '').trim().toUpperCase();
+          if (pos.includes('GK')) continue;
+          else if (pos.includes('CB') || pos.includes('LB') || pos.includes('RB') || pos.includes('LWB') || pos.includes('RWB')) defenders++;
+          else if (pos.includes('DMF')) dmfs++;
+          else if (pos.includes('AMF')) amfs++;
+          else if (pos.includes('CMF') || pos.includes('LMF') || pos.includes('RMF')) cmfs++;
+          else if (pos.includes('CF') || pos.includes('SS') || pos.includes('LWF') || pos.includes('RWF')) forwards++;
+          else {
+            const y = typeof p?.pitchY === 'number' ? p.pitchY : 50;
+            if (y >= 68) defenders++;
+            else if (y >= 35) cmfs++;
+            else forwards++;
+          }
+        }
+        const mids = dmfs + cmfs + amfs;
+        if (defenders > 0 && mids > 0 && forwards > 0) {
+          let inferred = `${defenders}-${mids}-${forwards}`;
+          if (defenders === 4 && dmfs === 2 && amfs === 1 && forwards === 3) inferred = '4-2-1-3';
+          else if (defenders === 4 && dmfs === 1 && (cmfs + amfs) === 2 && forwards === 3) inferred = '4-3-3';
+          else if (defenders === 4 && dmfs === 2 && (cmfs + amfs) === 2 && forwards === 2) inferred = '4-2-2-2';
+          else if (defenders === 4 && (dmfs + cmfs) === 2 && amfs === 3 && forwards === 1) inferred = '4-2-3-1';
+          else if (defenders === 4 && mids === 4 && forwards === 2) inferred = '4-4-2';
+          else if (defenders === 3 && dmfs === 2 && (cmfs + amfs) === 4 && forwards === 1) inferred = '3-2-4-1';
+          else if (defenders === 3 && mids === 5 && forwards === 2) inferred = '3-5-2';
+          else if (defenders === 5 && mids === 3 && forwards === 2) inferred = '5-3-2';
+          else if (defenders === 5 && mids === 2 && forwards === 3) inferred = '5-2-3';
+          canonicalResponse.formationName = inferred;
+          canonicalResponse.formationInferred = true;
+        } else {
+          canonicalResponse.formationName = null;
+          canonicalResponse.formationInferred = false;
+        }
+      } else {
+        canonicalResponse.formationInferred = false;
+      }
+
+      // Tactical Rating: strictly real calculation or null. Never 85.
+      if (
+        typeof canonicalResponse.tacticalRating !== 'number' ||
+        !Number.isFinite(canonicalResponse.tacticalRating) ||
+        canonicalResponse.tacticalRating <= 0 ||
+        canonicalResponse.tacticalRating > 100
+      ) {
+        const ratedPlayers = detectedPlayers.filter(
+          (p: any) => typeof p?.rating === 'number' && Number.isFinite(p.rating) && p.rating > 0 && p.rating <= 120
+        );
+        if (ratedPlayers.length >= 5) {
+          const avg = ratedPlayers.reduce((acc: number, p: any) => acc + p.rating, 0) / ratedPlayers.length;
+          canonicalResponse.tacticalRating = Math.min(100, Math.round(avg));
+        } else {
+          canonicalResponse.tacticalRating = null;
+        }
+      }
     }
 
     res.json(canonicalResponse);

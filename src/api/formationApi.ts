@@ -17,6 +17,7 @@ export interface FormationAnalysisResult {
   unreliableReason?: string;
   gameName?: string;
   formationName?: string;
+  formationInferred?: boolean;
   coachName?: string;
   playstyle?: string;
   teamStrength?: string;

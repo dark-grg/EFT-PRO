@@ -158,18 +158,19 @@ export const FormationReader: React.FC = () => {
       clearTimeout(timer2);
       clearTimeout(timer3);
 
-      // Check reliability per strict rule:
-      // إذا الصورة غير واضحة أو لم يتعرف على لاعبين أو التشكيلة غير محددة
+      // Check reliability:
+      // إذا الصورة صالحة وتم التعرف على 3 لاعبين على الأقل ومواقعهم، اعرض النتيجة حتى لو كان formationName فارغاً
+      const validPlayersCount = Array.isArray(result.detectedPlayers) ? result.detectedPlayers.length : 0;
+      const isPlayersRecognized = validPlayersCount >= 3;
+
       if (
         result.isFormationScreenshot === false ||
-        result.isReliable === false ||
-        !result.formationName ||
-        !Array.isArray(result.detectedPlayers) ||
-        result.detectedPlayers.length === 0
+        (!isPlayersRecognized && result.isReliable === false) ||
+        validPlayersCount === 0
       ) {
         const failureReason =
           result.unreliableReason ||
-          'لم أتمكن من قراءة التشكيلة واللاعبين بشكل موثوق، يرجى رفع صورة أوضح لخطة اللعب.';
+          'لم أتمكن من قراءة التشكيلة بشكل موثوق، يرجى رفع صورة أوضح لخطة اللعب.';
         setErrorMessage(failureReason);
         setStep('error');
         return;
@@ -499,9 +500,13 @@ export const FormationReader: React.FC = () => {
                   <span className="text-xl">🔥</span>
                   <h2 className="text-lg font-black text-white">تحليل تشكيلتك</h2>
                 </div>
-                {analysisData.formationName && (
+                {analysisData.formationName ? (
                   <span className="px-3 py-1 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 font-mono font-black text-xs">
-                    {analysisData.formationName}
+                    {(analysisData as any).formationInferred ? `مستنتجة: ${analysisData.formationName}` : analysisData.formationName}
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 rounded-xl bg-gray-500/15 border border-gray-500/30 text-gray-400 font-mono text-xs">
+                    الخطة غير محددة نصياً
                   </span>
                 )}
               </div>
@@ -512,7 +517,9 @@ export const FormationReader: React.FC = () => {
                 <div className="p-3.5 rounded-2xl bg-[#14141d] border border-white/5 flex flex-col justify-between">
                   <span className="text-[11px] text-gray-400">التشكيلة</span>
                   <span className="text-xl font-black text-white font-mono mt-1">
-                    {analysisData.formationName || 'غير محددة'}
+                    {analysisData.formationName 
+                      ? ((analysisData as any).formationInferred ? `الخطة المستنتجة: ${analysisData.formationName}` : analysisData.formationName)
+                      : 'الخطة غير محددة نصياً'}
                   </span>
                   {analysisData.playstyle && (
                     <span className="text-[10px] text-cyan-400 mt-1 truncate">
