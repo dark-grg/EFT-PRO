@@ -105,13 +105,17 @@ export const wheelApi = {
     } catch (err: any) {
       // If server returned 429 (Cooldown), update local cache immediately
       if (err?.status === 429 || err?.response?.code === 'COOLDOWN') {
-        const nextAt = err?.response?.nextSpinAtTimestamp || (err?.response?.nextSpinAt ? new Date(err.response.nextSpinAt).getTime() : Date.now() + (err?.response?.remainingMs || 86400000));
+        const rawNextAt = err?.response?.nextSpinAt;
+        const nextAt = typeof rawNextAt === 'number'
+          ? rawNextAt
+          : (err?.response?.nextSpinAtTimestamp || (rawNextAt ? new Date(rawNextAt).getTime() : Date.now() + (err?.response?.remainingMs || 86400000)));
         safeLocalStorage.setItem(LOCAL_NEXT_SPIN_KEY, nextAt);
         safeLocalStorage.setItem(LOCAL_LAST_SPIN_KEY, err?.response?.serverTime || Date.now());
         
         const error = new Error(err?.response?.message || err?.response?.error || 'مسموح بلفة واحدة كل 24 ساعة فقط.');
         (error as any).status = 429;
         (error as any).remainingMs = err?.response?.remainingMs;
+        (error as any).nextSpinAt = nextAt;
         throw error;
       }
 
@@ -124,10 +128,18 @@ export const wheelApi = {
    */
   getLocalFallbackStatus(): WheelStatusResponse {
     const now = Date.now();
-    const lastSpin = safeLocalStorage.getItem<number>(LOCAL_LAST_SPIN_KEY);
-    const nextSpin = safeLocalStorage.getItem<number>(LOCAL_NEXT_SPIN_KEY);
+    const lastSpin = safeLocalStorage.getItem<number | string>(LOCAL_LAST_SPIN_KEY);
+    const nextSpin = safeLocalStorage.getItem<number | string>(LOCAL_NEXT_SPIN_KEY);
 
-    if (!lastSpin || !nextSpin) {
+    let nextSpinMs: number | null = null;
+    if (typeof nextSpin === 'number') {
+      nextSpinMs = nextSpin;
+    } else if (typeof nextSpin === 'string' && nextSpin.trim()) {
+      const parsed = Number(nextSpin);
+      nextSpinMs = !Number.isNaN(parsed) && parsed > 0 ? parsed : new Date(nextSpin).getTime();
+    }
+
+    if (!nextSpinMs || Number.isNaN(nextSpinMs)) {
       return {
         ok: true,
         canSpin: true,
@@ -138,14 +150,14 @@ export const wheelApi = {
       };
     }
 
-    const remainingMs = Math.max(0, nextSpin - now);
+    const remainingMs = Math.max(0, nextSpinMs - now);
     const canSpin = remainingMs <= 0;
 
     return {
       ok: true,
       canSpin,
-      lastSpinAt: lastSpin,
-      nextSpinAt: nextSpin,
+      lastSpinAt: typeof lastSpin === 'number' ? lastSpin : null,
+      nextSpinAt: nextSpinMs,
       serverTime: now,
       remainingMs
     };

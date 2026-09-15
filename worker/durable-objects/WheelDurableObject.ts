@@ -215,8 +215,9 @@ export class WheelDurableObject {
         error: 'مسموح بلفة واحدة كل 24 ساعة فقط.',
         message: 'مسموح بلفة واحدة كل 24 ساعة فقط.',
         remainingMs,
-        nextSpinAt: nextSpinAtIso,
+        nextSpinAt: state.nextSpinAt,
         nextSpinAtTimestamp: state.nextSpinAt,
+        nextSpinAtIso,
         serverTime: now
       }, 429, request);
     }

@@ -143,20 +143,20 @@ app.post("/api/analyze-formation", async (req: Request, res: Response): Promise<
     const ai = getGemini();
 
     const systemInstruction = `أنت محلل تكتيكي وخبير رؤية حاسوبية (Vision AI) متخصص في لقطات شاشات تشكيلات وخطة اللعب في ألعاب كرة القدم، وبشكل خاص eFootball و PES.
-مهمتك فحص لقطة الشاشة (Screenshot) بدقة هندسية واستخراج البيانات التكتيكية الحقيقية فقط بدون أي تخمين أو اختراع.
+مهمتك فحص لقطة الشاشة (Screenshot) بدقة هندسية متناهية واستخراج البيانات التكتيكية الحقيقية فقط بدون أي تخمين أو اختراع.
 
 قواعد صارمة لا تقبل الاستثناء:
-1. تحقق أولاً هل الصورة تمثل لقطة شاشة حقيقية لخطة لعب / تشكيلة كرة قدم ('isFormationScreenshot': true أو false). إذا لم تكن كذلك، اجعل 'isReliable': false وضع السبب في 'unreliableReason'.
-2. إذا كانت الصورة غير واضحة، مشوشة، أو مقطوعة لدرجة تمنع قراءة التشكيلة بدقة، اجعل 'isReliable': false و 'unreliableReason': "لم أتمكن من قراءة التشكيلة بشكل موثوق، يرجى رفع صورة أوضح."
-3. استخرج التشكيلة المستخدمة (مثل '4-2-1-3', '4-3-3', '4-2-2-2', '5-3-2', '4-1-2-3', '3-2-2-3', '4-4-2').
+1. تحقق أولاً هل الصورة تمثل لقطة شاشة حقيقية لخطة لعب / تشكيلة كرة قدم ('isFormationScreenshot': true أو false). إذا لم تكن كذلك، اجعل 'isReliable': false واجعل 'tacticalRating': null وضع السبب في 'unreliableReason'.
+2. إذا كانت الصورة غير واضحة، مشوشة، مقطوعة، أو لم تظهر فيها بطاقات اللاعبين أو اسم التشكيلة، اجعل 'isReliable': false واجعل 'tacticalRating': null و 'unreliableReason': "لم أتمكن من قراءة التشكيلة بشكل موثوق، يرجى رفع صورة أوضح لخطة اللعب."
+3. استخرج التشكيلة المستخدمة (مثل '4-2-1-3', '4-3-3', '4-2-2-2', '5-3-2', '4-1-2-3', '3-2-2-3', '4-4-2'). إذا لم تجد اسم التشكيلة مكتوباً صراحة بنص الشاشة، فاحسب عدد اللاعبين في كل خط (دفاع - وسط - هجوم) واستنتج التشكيلة بدقة هندسية ولا تترك formationName فارغاً أو غير محدد إذا كانت لقطة شاشة خطة لعب.
 4. استخرج اسم المدرب (Coach) وأسلوب اللعب (Team Playstyle) مثل 'Quick Counter', 'Possession Game', 'Long Ball Counter', 'Out Wide' إن كانت ظاهرة بالصورة، وإلا اتركها فارغة "".
 5. استخرج قوة الفريق أو التقييم الظاهر (Team Strength / Rating) إن وجد.
-6. قيم التشكيلة تكتيكياً بناءً على توازن الخطوط والترابط (tacticalRating من 0 إلى 100).
+6. إذا كانت التشكيلة مقروءة بنجاح، قيم التشكيلة تكتيكياً بناءً على توازن الخطوط والترابط (tacticalRating من 0 إلى 100). أما إذا لم تكن واضحة أو لم تُرصد بطاقات اللاعبين، فيجب جعل tacticalRating: null منعاً باتاً لوضع أرقام افتراضية.
 7. استخرج نقاط القوة الحقيقية للتشكيلة المحددة (strengths: 3 إلى 4 نقاط باللغة العربية بناءً على مراكز اللاعبين وأسلوب اللعب المكتشف).
 8. استخرج نقاط الضعف والثغرات التكتيكية (weaknesses: 3 إلى 4 نقاط باللغة العربية مثل المساحات خلف الأظهرة، ضعف المساندة، إلخ).
 9. قدم نصائح تكتيكية دقيقة وقابلة للتطبيق (tacticalAdvice: 3 إلى 4 نصائح باللغة العربية).
 10. بالنسبة للاعبين الأساسيين في أرضية الملعب (detectedPlayers):
-    - استخرج كل لاعب ظاهر في التشكيلة الأساسية (حتى 11 لاعباً):
+    - استخرج كل لاعب ظاهر في التشكيلة الأساسية على عشب الملعب (حتى 11 لاعباً):
       * name: اسم اللاعب كما هو مكتوب بدقة على البطاقة/الملصق. إذا لم يكن واضحاً، اكتب 'unknown' واجعل isClear: false. لا تخترع أسماء!
       * position: رمز المركز الدقيق ('GK', 'CB', 'LB', 'RB', 'DMF', 'CMF', 'AMF', 'LMF', 'RMF', 'LWF', 'RWF', 'SS', 'CF').
       * rating: رقم التقييم العام (Overall) الظاهر على بطاقة اللاعب (مثل 102, 99, 97, 95). إذا كان غير مقروء، اجعله null. لا تخترع أرقاماً!
@@ -164,7 +164,8 @@ app.post("/api/analyze-formation", async (req: Request, res: Response): Promise<
       * pitchX: موضع اللاعب الأفقي بالنسبة المئوية في الملعب (0 = أقصى اليسار، 50 = المنتصف، 100 = أقصى اليمين).
       * pitchY: موضع اللاعب الرأسي بالنسبة المئوية في الملعب (0 = خط الهجوم العلوي، 50 = دائرة السنتر، 100 = منطقة حارس المرمى السفلية).
 11. ممنوع منعاً باتاً اختراع أي اسم لاعب أو تقييم. الالتزام بالحقيقة المرئية في الصورة فقط.
-12. الرد يجب أن يكون بصيغة JSON نقية ومطابقة للمخطط التالي فقط.`;
+12. إذا لم تجد لاعبين أو كانت التشكيلة غير محددة: اجعل isReliable: false واجعل tacticalRating: null.
+13. الرد يجب أن يكون بصيغة JSON نقية ومطابقة للمخطط التالي فقط.`;
 
     const prompt = `افحص لقطة شاشة التشكيلة بعناية تامة وأرجع كائن JSON بالهيكل التالي:
 {
@@ -221,6 +222,25 @@ app.post("/api/analyze-formation", async (req: Request, res: Response): Promise<
         res.status(429).json({
           error: "Quota exceeded",
           message: "تم بلوغ الحد الأقصى لطلبات التحليل مؤقتاً. يرجى الانتظار لحظات."
+        });
+        return;
+      }
+
+      if (errMsg.includes("invalid") || errMsg.includes("decode") || errMsg.includes("image") || errMsg.includes("argument")) {
+        res.json({
+          isFormationScreenshot: false,
+          isReliable: false,
+          unreliableReason: "الصورة المرفوعة غير صالحة أو تالفة، يرجى رفع لقطة شاشة واضحة لخطة اللعب.",
+          gameName: null,
+          formationName: null,
+          tacticalRating: null,
+          detectedPlayers: [],
+          coachName: null,
+          playstyle: null,
+          teamStrength: null,
+          strengths: [],
+          weaknesses: [],
+          tacticalAdvice: []
         });
         return;
       }
@@ -313,15 +333,38 @@ app.post("/api/analyze-formation", async (req: Request, res: Response): Promise<
       tacticalAdvice: Array.isArray(parsedData?.tacticalAdvice) ? parsedData.tacticalAdvice.filter((a: any) => typeof a === 'string' && a.trim()) : (Array.isArray(parsedData?.advice) ? parsedData.advice.filter((a: any) => typeof a === 'string' && a.trim()) : [])
     };
 
-    if (!canonicalResponse.isFormationScreenshot) {
-      canonicalResponse.isReliable = false;
-      canonicalResponse.unreliableReason = canonicalResponse.unreliableReason || 'الصورة المرفوعة ليست لقطة شاشة لتشكيلة كرة قدم صالحة.';
-    }
+    const validPlayersCount = Array.isArray(detectedPlayers) ? detectedPlayers.length : 0;
+    const hasFormationName = typeof formationName === 'string' && formationName.trim().length > 0;
 
-    if (!Array.isArray(canonicalResponse.detectedPlayers) || canonicalResponse.detectedPlayers.length === 0) {
+    const UNRELIABLE_MSG = 'لم أتمكن من قراءة التشكيلة بشكل موثوق، يرجى رفع صورة أوضح.';
+
+    if (!isFormationScreenshot) {
       canonicalResponse.isReliable = false;
-      canonicalResponse.unreliableReason = 'لم يتم التعرف على أي لاعب من الصورة';
+      canonicalResponse.unreliableReason = UNRELIABLE_MSG;
+      canonicalResponse.formationName = null;
+      canonicalResponse.tacticalRating = null;
       canonicalResponse.detectedPlayers = [];
+    } else if (validPlayersCount === 0 || !hasFormationName) {
+      canonicalResponse.isReliable = false;
+      canonicalResponse.unreliableReason = UNRELIABLE_MSG;
+      canonicalResponse.formationName = null;
+      canonicalResponse.tacticalRating = null;
+      canonicalResponse.detectedPlayers = [];
+    } else if (validPlayersCount < 3) {
+      canonicalResponse.isReliable = false;
+      canonicalResponse.unreliableReason = UNRELIABLE_MSG;
+      canonicalResponse.formationName = null;
+      canonicalResponse.tacticalRating = null;
+      canonicalResponse.detectedPlayers = [];
+    } else if (isReliable === false) {
+      canonicalResponse.isReliable = false;
+      canonicalResponse.unreliableReason = UNRELIABLE_MSG;
+      canonicalResponse.formationName = null;
+      canonicalResponse.tacticalRating = null;
+      canonicalResponse.detectedPlayers = [];
+    } else {
+      canonicalResponse.isReliable = true;
+      canonicalResponse.unreliableReason = null;
     }
 
     res.json(canonicalResponse);
@@ -435,9 +478,16 @@ app.post("/api/wheel/spin", (req: Request, res: Response): void => {
     if (userRecord && userRecord.nextSpinAt && now < userRecord.nextSpinAt) {
       const remainingMs = userRecord.nextSpinAt - now;
       res.status(429).json({
-        error: "Cooldown active",
+        ok: false,
+        success: false,
+        code: "COOLDOWN",
+        error: "مسموح بلفة واحدة كل 24 ساعة فقط.",
+        message: "مسموح بلفة واحدة كل 24 ساعة فقط.",
         remainingMs,
-        message: "مسموح بلفة واحدة كل 24 ساعة فقط."
+        nextSpinAt: userRecord.nextSpinAt,
+        nextSpinAtTimestamp: userRecord.nextSpinAt,
+        nextSpinAtIso: new Date(userRecord.nextSpinAt).toISOString(),
+        serverTime: now
       });
       return;
     }

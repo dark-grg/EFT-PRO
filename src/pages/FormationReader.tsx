@@ -159,11 +159,17 @@ export const FormationReader: React.FC = () => {
       clearTimeout(timer3);
 
       // Check reliability per strict rule:
-      // إذا الصورة غير واضحة: "لم أتمكن من قراءة التشكيلة بشكل موثوق، يرجى رفع صورة أوضح."
-      if (result.isFormationScreenshot === false || result.isReliable === false) {
+      // إذا الصورة غير واضحة أو لم يتعرف على لاعبين أو التشكيلة غير محددة
+      if (
+        result.isFormationScreenshot === false ||
+        result.isReliable === false ||
+        !result.formationName ||
+        !Array.isArray(result.detectedPlayers) ||
+        result.detectedPlayers.length === 0
+      ) {
         const failureReason =
           result.unreliableReason ||
-          'لم أتمكن من قراءة التشكيلة بشكل موثوق، يرجى رفع صورة أوضح.';
+          'لم أتمكن من قراءة التشكيلة واللاعبين بشكل موثوق، يرجى رفع صورة أوضح لخطة اللعب.';
         setErrorMessage(failureReason);
         setStep('error');
         return;

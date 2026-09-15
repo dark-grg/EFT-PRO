@@ -96,14 +96,21 @@ export function validateAndNormalizeVision(raw: RawVisionOutput): {
   if (!raw.isFormationScreenshot) {
     return {
       isValid: false,
-      errorMessage: 'لم نتمكن من اكتشاف تشكيلة واضحة في الصورة. يرجى التأكد من رفع لقطة شاشة لشاشة إدارة الفريق (Game Plan).'
+      errorMessage: 'لم أتمكن من قراءة التشكيلة بشكل موثوق، يرجى رفع صورة أوضح.'
     };
   }
 
-  if (raw.confidence < 35 && (!raw.detectedPlayers || raw.detectedPlayers.length < 5)) {
+  if (!Array.isArray(raw.detectedPlayers) || raw.detectedPlayers.length < 3) {
     return {
       isValid: false,
-      errorMessage: 'جودة الصورة غير كافية لقراءة اللاعبين والتشكيلة بوضوح. يرجى اختيار لقطة شاشة أكثر دقة.'
+      errorMessage: 'لم أتمكن من قراءة التشكيلة بشكل موثوق، يرجى رفع صورة أوضح.'
+    };
+  }
+
+  if (raw.confidence < 35 && raw.detectedPlayers.length < 5) {
+    return {
+      isValid: false,
+      errorMessage: 'لم أتمكن من قراءة التشكيلة بشكل موثوق، يرجى رفع صورة أوضح.'
     };
   }
 

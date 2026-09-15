@@ -142,8 +142,7 @@ export async function executeSpin(
       headers,
       body: JSON.stringify({
         deviceId: trimmedDeviceId,
-        idempotencyKey: options.idempotencyKey,
-        prizes: options.prizes
+        idempotencyKey: options.idempotencyKey
       })
     });
 
@@ -154,8 +153,9 @@ export async function executeSpin(
       error.status = 429;
       error.code = 'COOLDOWN';
       error.remainingMs = data?.remainingMs;
-      error.nextSpinAt = data?.nextSpinAt;
-      error.nextSpinAtTimestamp = data?.nextSpinAtTimestamp;
+      error.nextSpinAt = typeof data?.nextSpinAt === 'number' ? data.nextSpinAt : (data?.nextSpinAtTimestamp || (data?.nextSpinAt ? new Date(data.nextSpinAt).getTime() : Date.now() + (data?.remainingMs || 86400000)));
+      error.nextSpinAtTimestamp = error.nextSpinAt;
+      error.nextSpinAtIso = data?.nextSpinAtIso || new Date(error.nextSpinAt).toISOString();
       error.serverTime = data?.serverTime || Date.now();
       throw error;
     }

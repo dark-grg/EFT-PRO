@@ -445,13 +445,15 @@ export const Wheel: React.FC = () => {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex items-center justify-center">
           <button 
             onClick={spin}
-            disabled={isSpinning || isCheckingSpinPermission}
-            className={`group relative w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 bg-[#0B1221] overflow-hidden flex items-center justify-center transition-all active:scale-95 cursor-pointer ${
-              !isSubscribed 
-                ? 'border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.5)]' 
-                : 'border-yellow-400 shadow-[0_0_25px_rgba(234,179,8,0.6)]'
+            disabled={isSpinning || isCheckingSpinPermission || !cooldown.canSpin}
+            className={`group relative w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 bg-[#0B1221] overflow-hidden flex items-center justify-center transition-all active:scale-95 ${
+              !cooldown.canSpin
+                ? 'border-gray-600 opacity-90 cursor-not-allowed'
+                : !isSubscribed 
+                ? 'border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.5)] cursor-pointer' 
+                : 'border-yellow-400 shadow-[0_0_25px_rgba(234,179,8,0.6)] cursor-pointer'
             }`}
-            title={!isSubscribed ? "ممنوع التدوير دون تأكيد الاشتراك" : "انقر لتدوير عجلة الحظ"}
+            title={!cooldown.canSpin ? `متبقي على الدورة القادمة: ${cooldown.formattedCountdown}` : !isSubscribed ? "ممنوع التدوير دون تأكيد الاشتراك" : "انقر لتدوير عجلة الحظ"}
           >
             {/* Center Avatar Image replacing old Suarez photo */}
             <img 

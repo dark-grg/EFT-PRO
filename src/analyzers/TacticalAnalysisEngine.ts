@@ -24,6 +24,11 @@ export class TacticalAnalysisEngine {
       imageClarityNote?: string;
     }
   ): FormationAnalysis {
+    // Strict requirement: Never calculate fake tactical ratings or fallback scores without real players
+    if (!Array.isArray(players) || players.length < 3 || !formationName || formationName === 'unknown' || formationName === 'غير محددة') {
+      throw new Error('لم أتمكن من قراءة التشكيلة بشكل موثوق، يرجى رفع صورة أوضح.');
+    }
+
     // 1. Run Domain Analyzers
     const defResult = DefensiveAnalyzer.analyze(players);
     const midResult = MidfieldAnalyzer.analyze(players);

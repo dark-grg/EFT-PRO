@@ -49,7 +49,6 @@ export async function handlePostWheelSpin(request: Request, env: Env): Promise<R
   try {
     const result = await executeSpin(env, deviceId.trim(), {
       idempotencyKey,
-      prizes: body?.prizes,
       originRequest: request
     });
     return jsonResponse(result, 200, request);
@@ -57,15 +56,20 @@ export async function handlePostWheelSpin(request: Request, env: Env): Promise<R
     const status = err?.status || 500;
     
     if (status === 429) {
+      const nextSpinTimestamp = typeof err?.nextSpinAt === 'number' 
+        ? err.nextSpinAt 
+        : (err?.nextSpinAtTimestamp || (err?.nextSpinAt ? new Date(err.nextSpinAt).getTime() : Date.now() + (err?.remainingMs || 86400000)));
+
       return jsonResponse({
         ok: false,
         success: false,
         code: 'COOLDOWN',
         error: err?.message || 'مسموح بلفة واحدة كل 24 ساعة فقط.',
         message: err?.message || 'مسموح بلفة واحدة كل 24 ساعة فقط.',
-        remainingMs: err?.remainingMs ?? 0,
-        nextSpinAt: err?.nextSpinAt ?? (err?.nextSpinAtTimestamp ? new Date(err.nextSpinAtTimestamp).toISOString() : ''),
-        nextSpinAtTimestamp: err?.nextSpinAtTimestamp,
+        remainingMs: err?.remainingMs ?? Math.max(0, nextSpinTimestamp - Date.now()),
+        nextSpinAt: nextSpinTimestamp,
+        nextSpinAtTimestamp: nextSpinTimestamp,
+        nextSpinAtIso: err?.nextSpinAtIso || new Date(nextSpinTimestamp).toISOString(),
         serverTime: err?.serverTime || Date.now()
       }, 429, request);
     }

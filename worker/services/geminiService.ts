@@ -8,9 +8,9 @@ export const FORMATION_AI_MODEL = 'gemini-3.6-flash';
 // Supported fallback models confirmed active
 const CANDIDATE_MODELS = [
   'gemini-3.6-flash',
-  'gemini-2.5-flash',
-  'gemini-2.5-flash-lite',
-  'gemini-2.5-pro'
+  'gemini-3.8-flash',
+  'gemini-3.1-flash-lite',
+  'gemini-flash-latest'
 ];
 
 /**
@@ -185,15 +185,7 @@ export async function analyzeFormationWithGemini(
 
   let lastError: any = null;
 
-  // 1. Try primary Interactions API with gemini-3.6-flash
-  try {
-    return await callInteractionsApi(apiKey, FORMATION_AI_MODEL, cleanBase64, prompt, systemInstruction);
-  } catch (err: any) {
-    lastError = err;
-    console.warn(`Interactions API attempt with ${FORMATION_AI_MODEL} failed, falling back to generateContent:`, err?.message || err);
-  }
-
-  // 2. Fallback to generateContent across active candidate models
+  // 1. Primary call: generateContent with gemini-3.6-flash
   for (const model of CANDIDATE_MODELS) {
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
@@ -206,9 +198,16 @@ export async function analyzeFormationWithGemini(
           await new Promise((r) => setTimeout(r, 1000));
           continue;
         }
-        break; // Try next model
+        break; // Try next candidate model
       }
     }
+  }
+
+  // 2. Secondary fallback: Interactions API if generateContent failed
+  try {
+    return await callInteractionsApi(apiKey, FORMATION_AI_MODEL, cleanBase64, prompt, systemInstruction);
+  } catch (err: any) {
+    console.warn(`Interactions API fallback failed:`, err?.message || err);
   }
 
   throw lastError || new Error('تعذر الاتصال بخدمة تحليل التشكيلة حالياً، حاول مرة أخرى.');
