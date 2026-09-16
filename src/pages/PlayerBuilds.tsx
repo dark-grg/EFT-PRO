@@ -1,7 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { EF_LABO_PROVIDER, EFLabCardRecord } from '../services/progression/EFLabProgressionProvider';
-import { ExactCardImage } from '../components/ExactCardImage';
-import { Search, X, ChevronLeft } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { PlayerDevelopmentsApi, PlayerDevelopmentRecord } from '../services/api/playerDevelopmentsApi';
+import { Search, X, ChevronLeft, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,8 +9,8 @@ const STAT_LABELS = [
   'Passing',
   'Dribbling',
   'Dexterity',
-  'Lower Body',
-  'Aerial',
+  'Lower Body Strength',
+  'Aerial Strength',
   'Defending',
   'GK1',
   'GK2',
@@ -20,35 +19,54 @@ const STAT_LABELS = [
 
 export const PlayerBuilds: React.FC = () => {
   const navigate = useNavigate();
-  const [laboRecords] = useState<EFLabCardRecord[]>(() => EF_LABO_PROVIDER.getAllRecords());
+  const [records, setRecords] = useState<PlayerDevelopmentRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRecord, setSelectedRecord] = useState<EFLabCardRecord | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<PlayerDevelopmentRecord | null>(null);
 
-  // Filter records based on search query
+  useEffect(() => {
+    let isMounted = true;
+    PlayerDevelopmentsApi.getAll()
+      .then(data => {
+        if (isMounted) {
+          setRecords(data);
+          setIsLoading(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Filter records based on search query (playerName or cardType / cardVersion)
   const filteredRecords = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return laboRecords;
-    return laboRecords.filter(record => 
+    if (!q) return records;
+    return records.filter(record => 
       record.playerName.toLowerCase().includes(q) ||
-      (record.arabicName && record.arabicName.toLowerCase().includes(q)) ||
       record.cardType.toLowerCase().includes(q) ||
-      record.position.toLowerCase().includes(q)
+      (record.cardVersion && record.cardVersion.toLowerCase().includes(q))
     );
-  }, [laboRecords, searchQuery]);
+  }, [records, searchQuery]);
 
-  const getProgressionValues = (p: EFLabCardRecord['progression']) => {
-    if (!p) return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  const getProgressionValues = (r: PlayerDevelopmentRecord) => {
+    if (!r) return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     return [
-      p.shooting ?? 0,
-      p.passing ?? 0,
-      p.dribbling ?? 0,
-      p.dexterity ?? 0,
-      p.lowerBody ?? 0,
-      p.aerial ?? 0,
-      p.defending ?? 0,
-      p.gk1 ?? 0,
-      p.gk2 ?? 0,
-      p.gk3 ?? 0,
+      r.shooting ?? 0,
+      r.passing ?? 0,
+      r.dribbling ?? 0,
+      r.dexterity ?? 0,
+      r.lowerBody ?? 0,
+      r.aerial ?? 0,
+      r.defending ?? 0,
+      r.gk1 ?? 0,
+      r.gk2 ?? 0,
+      r.gk3 ?? 0,
     ];
   };
 
@@ -75,7 +93,7 @@ export const PlayerBuilds: React.FC = () => {
           <Search className="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
           <input 
             type="text"
-            placeholder="🔎 ابحث عن لاعب..."
+            placeholder="🔎 ابحث عن لاعب أو نوع البطاقة..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-[#0B1221] border border-blue-900/40 rounded-2xl pr-12 pl-4 py-3.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-500 transition shadow-md"
@@ -91,56 +109,57 @@ export const PlayerBuilds: React.FC = () => {
         </div>
 
         {/* Players Grid */}
-        {filteredRecords.length === 0 ? (
+        {isLoading ? (
+          <div className="bg-[#0B1221] rounded-2xl p-16 text-center border border-blue-900/30 space-y-3">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto" />
+            <p className="text-xs text-gray-400">جاري تحميل التطويرات من السيرفر...</p>
+          </div>
+        ) : filteredRecords.length === 0 ? (
           <div className="bg-[#0B1221] rounded-2xl p-12 text-center border border-blue-900/30 space-y-2">
-            <p className="text-sm font-bold text-gray-300">غير متاح</p>
-            <p className="text-xs text-gray-500">لا توجد نتائج مطابقة لبحثك أو أن البيانات غير متوفرة.</p>
+            <p className="text-sm font-bold text-gray-300">لا توجد نتائج</p>
+            <p className="text-xs text-gray-500">لا توجد بطاقات مطابقة لبحثك في قاعدة البيانات.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
             {filteredRecords.map((record) => {
-              const values = getProgressionValues(record.progression);
-              const hasProg = record.progression && Object.keys(record.progression).length > 0;
-              const line1 = values.slice(0, 5).join(' / ');
-              const line2 = values.slice(5, 10).join(' / ');
+              const values = getProgressionValues(record);
+              const line1 = values.slice(0, 5).join(' • ');
+              const line2 = values.slice(5, 10).join(' • ');
 
               return (
                 <div
-                  key={record.cardId}
+                  key={record.id}
                   onClick={() => setSelectedRecord(record)}
                   className="bg-[#0B1221] hover:bg-[#131E32] rounded-2xl p-3 border border-blue-900/30 hover:border-blue-500/50 transition cursor-pointer flex flex-col items-center text-center space-y-2.5 shadow-md"
                 >
-                  {/* Player / Card Image */}
-                  <div className="w-16 h-20 sm:w-20 sm:h-24 rounded-xl bg-[#050B14] overflow-hidden flex items-center justify-center border border-white/5 relative">
-                    {record.cardImageUrl ? (
-                      <ExactCardImage
-                        cardId={record.cardId}
-                        cardImageUrl={record.cardImageUrl}
+                  {/* Card Image */}
+                  <div className="w-20 h-28 sm:w-24 sm:h-32 rounded-xl bg-[#050B14] overflow-hidden flex items-center justify-center border border-white/5 relative">
+                    {record.imageUrl ? (
+                      <img
+                        src={record.imageUrl}
                         alt={record.playerName}
                         className="w-full h-full object-contain"
+                        referrerPolicy="no-referrer"
                       />
                     ) : (
-                      <span className="text-[10px] text-gray-500 px-1 text-center">غير متاح</span>
+                      <span className="text-[10px] text-gray-500 px-1 text-center">لا توجد صورة</span>
                     )}
                   </div>
 
-                  {/* Player Name */}
+                  {/* Player Name & Card Type */}
                   <div className="w-full truncate">
                     <h3 className="font-bold text-xs text-white truncate px-1">
                       {record.playerName}
                     </h3>
+                    <p className="text-[10px] text-blue-400 truncate px-1">
+                      {record.cardType} {record.cardVersion && `• ${record.cardVersion}`}
+                    </p>
                   </div>
 
-                  {/* Progression Only */}
-                  <div className="w-full bg-[#050B14] rounded-xl p-2 border border-white/5 font-mono text-[11px] tracking-tight text-blue-400 space-y-0.5">
-                    {hasProg ? (
-                      <>
-                        <div dir="ltr" className="truncate">{line1}</div>
-                        <div dir="ltr" className="truncate">{line2}</div>
-                      </>
-                    ) : (
-                      <span className="text-[10px] text-gray-500">غير متاح</span>
-                    )}
+                  {/* Progression Only (10 stats) */}
+                  <div className="w-full bg-[#050B14] rounded-xl p-2 border border-white/5 font-mono text-[10px] tracking-tight text-blue-300 space-y-0.5">
+                    <div dir="ltr" className="truncate">{line1}</div>
+                    <div dir="ltr" className="truncate">{line2}</div>
                   </div>
                 </div>
               );
@@ -157,7 +176,7 @@ export const PlayerBuilds: React.FC = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[#0B1221] border border-blue-900/50 rounded-3xl p-6 max-w-sm w-full space-y-5 shadow-2xl relative"
+              className="bg-[#0B1221] border border-blue-900/50 rounded-3xl p-6 max-w-sm w-full space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto"
             >
               <button 
                 onClick={() => setSelectedRecord(null)}
@@ -166,18 +185,18 @@ export const PlayerBuilds: React.FC = () => {
                 <X className="w-5 h-5" />
               </button>
 
-              {/* Player Image */}
+              {/* Card Image */}
               <div className="flex justify-center pt-2">
-                <div className="w-24 h-32 rounded-2xl bg-[#050B14] overflow-hidden flex items-center justify-center border border-white/10 shadow-lg">
-                  {selectedRecord.cardImageUrl ? (
-                    <ExactCardImage
-                      cardId={selectedRecord.cardId}
-                      cardImageUrl={selectedRecord.cardImageUrl}
+                <div className="w-32 h-44 rounded-2xl bg-[#050B14] overflow-hidden flex items-center justify-center border border-white/10 shadow-lg">
+                  {selectedRecord.imageUrl ? (
+                    <img
+                      src={selectedRecord.imageUrl}
                       alt={selectedRecord.playerName}
                       className="w-full h-full object-contain"
+                      referrerPolicy="no-referrer"
                     />
                   ) : (
-                    <span className="text-xs text-gray-500 text-center px-2">غير متاح</span>
+                    <span className="text-xs text-gray-500 text-center px-2">لا توجد صورة</span>
                   )}
                 </div>
               </div>
@@ -185,21 +204,19 @@ export const PlayerBuilds: React.FC = () => {
               {/* Player Name */}
               <div className="text-center space-y-1">
                 <h2 className="text-base font-black text-white">{selectedRecord.playerName}</h2>
-                {selectedRecord.arabicName && (
-                  <p className="text-xs text-gray-400">{selectedRecord.arabicName}</p>
-                )}
+                <p className="text-xs text-blue-400 font-bold">{selectedRecord.cardType} {selectedRecord.cardVersion && `• ${selectedRecord.cardVersion}`}</p>
               </div>
 
               {/* Progression Data */}
               <div className="bg-[#050B14] rounded-2xl p-4 border border-blue-900/40 space-y-3">
-                <div className="text-xs font-bold text-gray-300">التطوير:</div>
+                <div className="text-xs font-bold text-gray-300">تفاصيل التطوير:</div>
                 <div className="bg-[#0B1221] p-3 rounded-xl border border-white/5 font-mono text-xs text-blue-400 text-center tracking-wider" dir="ltr">
-                  {getProgressionValues(selectedRecord.progression).join(' / ')}
+                  {getProgressionValues(selectedRecord).join(' • ')}
                 </div>
 
                 <div className="space-y-1.5 pt-2 border-t border-white/5 text-xs">
                   {STAT_LABELS.map((label, idx) => {
-                    const vals = getProgressionValues(selectedRecord.progression);
+                    const vals = getProgressionValues(selectedRecord);
                     return (
                       <div key={label} className="flex items-center justify-between text-gray-400">
                         <span>{label}</span>

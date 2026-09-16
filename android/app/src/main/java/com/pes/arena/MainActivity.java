@@ -7,6 +7,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(GameLauncherPlugin.class);
+        registerPlugin(EFootBaseWebViewPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

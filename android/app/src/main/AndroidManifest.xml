@@ -24,6 +24,11 @@
 
         </activity>
 
+        <activity
+            android:name=".EFootBaseWebViewActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
