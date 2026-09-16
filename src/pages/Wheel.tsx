@@ -11,7 +11,6 @@ import {
   Award,
   CheckCircle2,
   X,
-  History,
   Lock,
   Send,
   ExternalLink,
@@ -28,9 +27,9 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import toast from 'react-hot-toast';
 import { WheelService } from '../services/WheelService';
-import suarezImage from '../assets/images/luis_suarez_player_1789165035516.jpg';
-import ipadImage from '../assets/images/ipad_gaming_prize_1789165464354.jpg';
-import casillasImage from '../assets/images/iker_casillas_card_1789301168614.jpg';
+import suarezImage from '../assets/images/luis_suarez_104_official.png';
+import ipadImage from '../assets/images/ipad_pro_m4_official.png';
+import casillasImage from '../assets/images/iker_casillas_103_official.png';
 import wheelCenterAvatar from '../assets/images/alrashdawi_avatar.svg';
 
 const TELEGRAM_CHANNEL_URL = 'https://t.me/P2_B3';
@@ -41,9 +40,10 @@ const TELEGRAM_STATUS_KEY = 'eft_telegram_wheel_verified_status_v4';
 // Exactly matching user request:
 // 1. سواريز: 1%
 // 2. 150 كوينز: 1%
-// 3. ايباد برو: 0%
-// 4. كاسياس: 1%
-// 5. حظ اوفر: 97% (تصل النسبة الإجمالية إلى 100% بدقة بعد طلب 99% + 3% جوائز)
+// 3. 250 كوينز: 1%
+// 4. ايباد برو: 0%
+// 5. كاسياس: 1%
+// 6. حظ اوفر: 96%
 import { wheelApi, CanonicalPrize } from '../api/wheelApi';
 
 interface Prize extends CanonicalPrize {
@@ -54,7 +54,7 @@ const FALLBACK_PRIZES: Prize[] = [
   {
     id: 'suarez',
     name: 'لاعب مميز: لويس سواريز',
-    subtitle: 'طاقات 100 OVR - إبيك بوستر',
+    subtitle: 'طاقات 104 OVR - إبيك بوستر',
     type: 'special_player',
     iconColor: '#EAB308',
     percentage: 1,
@@ -70,9 +70,17 @@ const FALLBACK_PRIZES: Prize[] = [
     percentage: 1
   },
   {
+    id: 'coins_250',
+    name: '250 كوينز',
+    subtitle: 'شحن كوينز إضافي مجاني',
+    type: 'coins',
+    iconColor: '#F59E0B',
+    percentage: 1
+  },
+  {
     id: 'ipad_prize',
-    name: 'جهاز iPad Pro للألعاب',
-    subtitle: 'شاشة 120Hz فائقة السرعة',
+    name: 'جهاز iPad Pro M4',
+    subtitle: 'أحدث جهاز من Apple بشاشة 120Hz فائقة السرعة',
     type: 'ipad',
     iconColor: '#06B6D4',
     percentage: 0,
@@ -80,8 +88,8 @@ const FALLBACK_PRIZES: Prize[] = [
   },
   {
     id: 'casillas',
-    name: 'إيكر كاسياس 103',
-    subtitle: 'حارس أسطوري - إبيك بوستر ريال مدريد',
+    name: 'إيكر كاسياس 105',
+    subtitle: 'حارس أسطوري - إبيك بوستر OVR 105',
     type: 'special_player',
     iconColor: '#38BDF8',
     percentage: 1,
@@ -93,7 +101,7 @@ const FALLBACK_PRIZES: Prize[] = [
     subtitle: 'حاول مجدداً في السحب القادم',
     type: 'better_luck',
     iconColor: '#94A3B8',
-    percentage: 97
+    percentage: 96
   }
 ];
 
@@ -103,9 +111,9 @@ export const Wheel: React.FC = () => {
   const [prizes, setPrizes] = useState<Prize[]>(FALLBACK_PRIZES);
 
   useEffect(() => {
-    // Load canonical prizes
+    // Load canonical prizes from server if they contain the full updated list
     wheelApi.getPrizes().then(serverPrizes => {
-      if (serverPrizes && serverPrizes.length > 0) {
+      if (serverPrizes && Array.isArray(serverPrizes) && serverPrizes.length >= FALLBACK_PRIZES.length) {
         // Map images to server prizes
         const imageMap: Record<string, any> = {
           'suarez': suarezImage,
@@ -113,7 +121,12 @@ export const Wheel: React.FC = () => {
           'casillas': casillasImage
         };
         setPrizes(serverPrizes.map(p => ({ ...p, image: imageMap[p.id] })));
+      } else {
+        // Fallback already contains the complete updated 6 prizes
+        setPrizes(FALLBACK_PRIZES);
       }
+    }).catch(() => {
+      setPrizes(FALLBACK_PRIZES);
     });
   }, []);
 
@@ -130,13 +143,6 @@ export const Wheel: React.FC = () => {
   const [isSpinning, setIsSpinning] = useState<boolean>(false);
   const [cooldown, setCooldown] = useState(() => WheelService.getCooldownStatus());
   const [wonPrize, setWonPrize] = useState<Prize | null>(null);
-  const [history, setHistory] = useState<Array<{ prize: Prize; time: string }>>([
-    { 
-      prize: FALLBACK_PRIZES[1], 
-      time: 'منذ ساعتين' 
-    }
-  ]);
-  const [showHistory, setShowHistory] = useState<boolean>(false);
 
   // Live 24h countdown timer & Server Sync
   useEffect(() => {
@@ -284,10 +290,6 @@ export const Wheel: React.FC = () => {
       setTimeout(() => {
         setIsSpinning(false);
         setWonPrize(selected);
-        setHistory((prev) => [
-          { prize: selected, time: 'الآن' },
-          ...prev
-        ]);
 
         if (selected.id === 'suarez') {
           toast.success('🎉 ألف مبروك! فزت باللاعب المميز لويس سواريز (100 OVR)!', {
@@ -296,6 +298,11 @@ export const Wheel: React.FC = () => {
           });
         } else if (selected.id === 'coins_150') {
           toast.success('💰 ألف مبروك! ربحت 150 كوينز مجاناً!', {
+            duration: 6000,
+            icon: '🪙'
+          });
+        } else if (selected.id === 'coins_250') {
+          toast.success('💰 ألف مبروك! ربحت 250 كوينز مجاناً!', {
             duration: 6000,
             icon: '🪙'
           });
@@ -375,9 +382,16 @@ export const Wheel: React.FC = () => {
                   const anglePerSlice = 360 / prizes.length;
                   const startAngle = idx * anglePerSlice;
                   const endAngle = startAngle + anglePerSlice;
-                  // Alternate basic colors, or use specific ones if needed.
-                  const colors = ['#78350f', '#854d0e', '#0e7490', '#0369a1', '#1e293b'];
-                  const color = colors[idx % colors.length];
+                  // Distinct sector colors for all 6 prizes so adjacent sectors contrast perfectly
+                  const sliceColors: Record<string, string> = {
+                    'suarez': '#854d0e',      // Golden Amber
+                    'coins_150': '#b45309',   // Warm Bronze
+                    'coins_250': '#d97706',   // Bright Gold
+                    'ipad_prize': '#0891b2',  // Cyan Teal
+                    'casillas': '#0284c7',    // Sky Blue
+                    'better_luck': '#1e293b'  // Dark Slate
+                  };
+                  const color = sliceColors[p.id] || ['#854d0e', '#b45309', '#d97706', '#0891b2', '#0284c7', '#1e293b'][idx % 6];
                   return `${color} ${startAngle}deg ${endAngle}deg`;
                 }).join(', ')
               })`
@@ -400,8 +414,11 @@ export const Wheel: React.FC = () => {
                 <div className="flex flex-col items-center gap-0.5 text-center -translate-y-1">
                   {prize.isSpecial ? (
                     <div className="flex flex-col items-center">
-                      <span className="text-[11px] font-black text-yellow-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
-                        ⭐ سواريز 100
+                      <div className="w-5 h-5 rounded-full overflow-hidden border border-yellow-400 shadow-sm bg-black mb-0.5">
+                        <img src={suarezImage} alt="سواريز" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      </div>
+                      <span className="text-[10px] font-black text-yellow-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+                        ⭐ سواريز 104
                       </span>
                     </div>
                   ) : prize.id === 'coins_150' ? (
@@ -410,16 +427,28 @@ export const Wheel: React.FC = () => {
                         🪙 150 كوينز
                       </span>
                     </div>
+                  ) : prize.id === 'coins_250' ? (
+                    <div className="flex flex-col items-center">
+                      <span className="text-[10px] font-black text-amber-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+                        🪙 250 كوينز
+                      </span>
+                    </div>
                   ) : prize.id === 'ipad_prize' ? (
                     <div className="flex flex-col items-center">
+                      <div className="w-5 h-5 rounded-md overflow-hidden border border-cyan-400 shadow-sm bg-white mb-0.5">
+                        <img src={ipadImage} alt="آيباد برو" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      </div>
                       <span className="text-[10px] font-black text-cyan-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
                         📱 آيباد برو
                       </span>
                     </div>
                   ) : prize.id === 'casillas' ? (
                     <div className="flex flex-col items-center">
+                      <div className="w-5 h-5 rounded-full overflow-hidden border border-sky-400 shadow-sm bg-black mb-0.5">
+                        <img src={casillasImage} alt="كاسياس" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      </div>
                       <span className="text-[10px] font-black text-sky-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
-                        🧤 كاسياس 103
+                        🧤 كاسياس 105
                       </span>
                     </div>
                   ) : prize.id === 'better_luck' ? (
@@ -571,7 +600,7 @@ export const Wheel: React.FC = () => {
             <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[8px] font-black px-1.5 py-0.2 rounded font-mono">
               ⭐ بطاقة نادرة
             </div>
-            <div className="w-12 h-12 rounded-full border-2 border-yellow-400 overflow-hidden shadow-[0_0_10px_rgba(234,179,8,0.5)] mt-1 bg-black">
+            <div className="w-14 h-20 rounded-xl border-2 border-yellow-400 overflow-hidden shadow-[0_0_12px_rgba(234,179,8,0.5)] mt-1 bg-black">
               <img 
                 src={suarezImage} 
                 alt="لويس سواريز" 
@@ -581,7 +610,7 @@ export const Wheel: React.FC = () => {
             </div>
             <div className="flex flex-col text-center">
               <span className="text-xs font-black text-yellow-300">لويس سواريز</span>
-              <span className="text-[10px] text-gray-400 font-mono">100 OVR - مهاجم أسطوري</span>
+              <span className="text-[10px] text-gray-400 font-mono">104 OVR - إبيك بوستر</span>
             </div>
           </Card>
 
@@ -599,22 +628,36 @@ export const Wheel: React.FC = () => {
             </div>
           </Card>
 
+          {/* 250 Coins Prize */}
+          <Card className="p-3 flex flex-col items-center justify-center gap-2 bg-[#0B1221] border-2 border-amber-500/40 hover:border-yellow-500/60 transition-all relative overflow-hidden">
+            <div className="absolute top-1 right-1 bg-amber-500 text-black text-[8px] font-black px-1.5 py-0.2 rounded font-mono">
+              🪙 شحن كوينز
+            </div>
+            <div className="w-11 h-11 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/40 flex items-center justify-center font-black text-sm shadow-sm mt-1">
+              <Coins size={22} />
+            </div>
+            <div className="flex flex-col text-center">
+              <span className="text-xs font-black text-white">250 كوينز</span>
+              <span className="text-[10px] text-amber-300 font-mono font-bold">شحن مجاني إضافي</span>
+            </div>
+          </Card>
+
           {/* iPad Gaming Prize */}
           <Card className="p-3 flex flex-col items-center justify-center gap-2 bg-gradient-to-b from-cyan-950/40 to-[#0B1221] border-2 border-cyan-500/40 relative overflow-hidden shadow-[0_0_15px_rgba(6,182,212,0.2)]">
             <div className="absolute top-1 right-1 bg-cyan-500 text-black text-[8px] font-black px-1.5 py-0.2 rounded font-mono">
               📱 جائزة كبرى
             </div>
-            <div className="w-12 h-12 rounded-xl border border-cyan-400/60 overflow-hidden shadow-[0_0_10px_rgba(6,182,212,0.4)] mt-1 bg-black">
+            <div className="w-16 h-16 rounded-xl border border-cyan-400/60 overflow-hidden shadow-[0_0_12px_rgba(6,182,212,0.4)] mt-1 bg-black/80 flex items-center justify-center p-0.5">
               <img 
                 src={ipadImage} 
                 alt="جهاز آيباد برو" 
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
                 referrerPolicy="no-referrer"
               />
             </div>
             <div className="flex flex-col text-center">
               <span className="text-xs font-black text-cyan-300">iPad Pro للألعاب</span>
-              <span className="text-[10px] text-gray-400 font-mono">شاشة 120Hz للألعاب</span>
+              <span className="text-[10px] text-gray-400 font-mono">M4 شاشة 120Hz للألعاب</span>
             </div>
           </Card>
 
@@ -623,17 +666,17 @@ export const Wheel: React.FC = () => {
             <div className="absolute top-1 right-1 bg-sky-500 text-black text-[8px] font-black px-1.5 py-0.2 rounded font-mono">
               🧤 حارس إبيك
             </div>
-            <div className="w-11 h-11 rounded-full border-2 border-sky-400/60 overflow-hidden shadow-sm relative shrink-0 mt-1">
+            <div className="w-14 h-20 rounded-xl border-2 border-sky-400/60 overflow-hidden shadow-[0_0_12px_rgba(56,189,248,0.4)] relative shrink-0 mt-1 bg-black">
               <img 
                 src={casillasImage} 
                 alt="إيكر كاسياس" 
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                 referrerPolicy="no-referrer"
               />
             </div>
             <div className="flex flex-col text-center">
               <span className="text-xs font-black text-white">إيكر كاسياس</span>
-              <span className="text-[10px] text-sky-400 font-mono font-bold">103 OVR - حارس أسطوري</span>
+              <span className="text-[10px] text-sky-400 font-mono font-bold">105 OVR - إبيك بوستر</span>
             </div>
           </Card>
 
@@ -651,46 +694,6 @@ export const Wheel: React.FC = () => {
             </div>
           </Card>
         </div>
-      </div>
-
-      {/* Prize History Accordion */}
-      <div className="w-full mt-2 text-right">
-        <Card 
-          onClick={() => setShowHistory(!showHistory)}
-          className="w-full p-3.5 flex items-center justify-between bg-[#0B1221] border-white/10 cursor-pointer hover:border-white/20 transition-all rounded-2xl"
-        >
-          <div className="flex items-center gap-2 text-xs font-bold text-white">
-            <History size={16} className="text-yellow-400" />
-            <span>سجل الجوائز المكتسبة ({history.length})</span>
-          </div>
-          <ChevronLeft 
-            size={16} 
-            className={`text-gray-400 transition-transform duration-200 ${showHistory ? '-rotate-90' : ''}`} 
-          />
-        </Card>
-
-        {showHistory && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-2 flex flex-col gap-2 p-3 bg-black/40 rounded-xl border border-white/10 text-right"
-          >
-            {history.map((h, i) => (
-              <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-[#0B1221] border border-white/5 text-xs">
-                <div className="flex items-center gap-2">
-                  {h.prize.id === 'better_luck' ? (
-                    <RotateCcw size={14} className="text-slate-400" />
-                  ) : (
-                    <CheckCircle2 size={14} className="text-emerald-400" />
-                  )}
-                  <span className="font-bold text-white">{h.prize.name}</span>
-                </div>
-                <span className="text-[10px] text-gray-400 font-mono">{h.time}</span>
-              </div>
-            ))}
-          </motion.div>
-        )}
       </div>
 
       {/* ================= TELEGRAM SUBSCRIPTION REQUIRED MODAL ================= */}
@@ -826,20 +829,13 @@ export const Wheel: React.FC = () => {
               {/* Special Card Representation for Suarez */}
               {wonPrize.isSpecial ? (
                 <div className="w-full flex flex-col items-center my-2">
-                  <div className="relative w-36 h-36 rounded-2xl border-4 border-yellow-400 shadow-[0_0_25px_rgba(234,179,8,0.6)] overflow-hidden bg-black/60">
+                  <div className="relative w-44 h-60 rounded-2xl border-4 border-yellow-400 shadow-[0_0_30px_rgba(234,179,8,0.7)] overflow-hidden bg-black/90">
                     <img 
                       src={suarezImage} 
-                      alt="لويس سواريز" 
-                      className="w-full h-full object-cover"
+                      alt="لويس سواريز 104" 
+                      className="w-full h-full object-contain"
                       referrerPolicy="no-referrer"
                     />
-                    <div className="absolute top-1 left-1 bg-yellow-500 text-black font-black text-xs px-1.5 rounded font-mono">
-                      100 OVR
-                    </div>
-                    <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/80 to-transparent py-1 text-center">
-                      <span className="text-xs font-black text-yellow-300">لويس سواريز</span>
-                      <span className="text-[9px] block text-emerald-400 font-bold">إبيك بوستر (CF)</span>
-                    </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 w-full mt-3">
@@ -859,20 +855,13 @@ export const Wheel: React.FC = () => {
                 </div>
               ) : wonPrize.id === 'ipad_prize' ? (
                 <div className="w-full flex flex-col items-center my-2">
-                  <div className="relative w-36 h-36 rounded-2xl border-4 border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.6)] overflow-hidden bg-black">
+                  <div className="relative w-48 h-48 rounded-2xl border-4 border-cyan-400 shadow-[0_0_30px_rgba(6,182,212,0.7)] overflow-hidden bg-black/90 p-1 flex items-center justify-center">
                     <img 
                       src={ipadImage} 
-                      alt="جهاز آيباد برو" 
-                      className="w-full h-full object-cover"
+                      alt="جهاز آيباد برو M4" 
+                      className="w-full h-full object-contain"
                       referrerPolicy="no-referrer"
                     />
-                    <div className="absolute top-1 left-1 bg-cyan-500 text-black font-black text-xs px-1.5 rounded font-mono">
-                      120Hz
-                    </div>
-                    <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/80 to-transparent py-1 text-center">
-                      <span className="text-xs font-black text-cyan-300">iPad Pro للألعاب</span>
-                      <span className="text-[9px] block text-emerald-400 font-bold">شاشة ProMotion فائقة السرعة</span>
-                    </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 w-full mt-3">
@@ -886,40 +875,33 @@ export const Wheel: React.FC = () => {
                     </div>
                     <div className="p-1.5 bg-black/40 rounded-lg border border-white/5 flex flex-col">
                       <span className="text-[9px] text-gray-400">المعالج</span>
-                      <span className="text-xs font-black text-purple-400 font-mono">Apple M2</span>
+                      <span className="text-xs font-black text-purple-400 font-mono">Apple M4</span>
                     </div>
                   </div>
                 </div>
               ) : wonPrize.id === 'casillas' ? (
                 <div className="w-full flex flex-col items-center my-2">
-                  <div className="relative w-36 h-36 rounded-2xl border-4 border-sky-400 shadow-[0_0_25px_rgba(56,189,248,0.6)] overflow-hidden bg-black/60">
+                  <div className="relative w-44 h-60 rounded-2xl border-4 border-sky-400 shadow-[0_0_30px_rgba(56,189,248,0.7)] overflow-hidden bg-black/90">
                     <img 
                       src={casillasImage} 
-                      alt="إيكر كاسياس" 
-                      className="w-full h-full object-cover"
+                      alt="إيكر كاسياس 105" 
+                      className="w-full h-full object-contain"
                       referrerPolicy="no-referrer"
                     />
-                    <div className="absolute top-1 left-1 bg-sky-500 text-black font-black text-xs px-1.5 rounded font-mono">
-                      103 OVR
-                    </div>
-                    <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/80 to-transparent py-1 text-center">
-                      <span className="text-xs font-black text-sky-300">إيكر كاسياس</span>
-                      <span className="text-[9px] block text-sky-400 font-bold">إبيك بوستر (GK)</span>
-                    </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 w-full mt-3">
                     <div className="p-1.5 bg-black/40 rounded-lg border border-white/5 flex flex-col">
                       <span className="text-[9px] text-gray-400">ردود الفعل</span>
-                      <span className="text-xs font-black text-yellow-400 font-mono">101</span>
+                      <span className="text-xs font-black text-yellow-400 font-mono">102</span>
                     </div>
                     <div className="p-1.5 bg-black/40 rounded-lg border border-white/5 flex flex-col">
                       <span className="text-[9px] text-gray-400">اليقظة</span>
-                      <span className="text-xs font-black text-emerald-400 font-mono">99</span>
+                      <span className="text-xs font-black text-emerald-400 font-mono">101</span>
                     </div>
                     <div className="p-1.5 bg-black/40 rounded-lg border border-white/5 flex flex-col">
                       <span className="text-[9px] text-gray-400">الارتقاء</span>
-                      <span className="text-xs font-black text-sky-400 font-mono">95</span>
+                      <span className="text-xs font-black text-sky-400 font-mono">98</span>
                     </div>
                   </div>
                 </div>

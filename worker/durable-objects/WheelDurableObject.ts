@@ -33,9 +33,18 @@ export const DEFAULT_PRIZES: PrizeOption[] = [
     iconColor: '#F59E0B'
   },
   { 
+    id: 'coins_250', 
+    weight: 1, 
+    index: 2,
+    name: '250 كوينز',
+    subtitle: 'شحن كوينز إضافي مجاني',
+    type: 'coins',
+    iconColor: '#F59E0B'
+  },
+  { 
     id: 'ipad_prize', 
     weight: 0, 
-    index: 2,
+    index: 3,
     name: 'جهاز iPad Pro للألعاب',
     subtitle: 'شاشة 120Hz فائقة السرعة',
     type: 'ipad',
@@ -44,7 +53,7 @@ export const DEFAULT_PRIZES: PrizeOption[] = [
   { 
     id: 'casillas', 
     weight: 1, 
-    index: 3,
+    index: 4,
     name: 'إيكر كاسياس 103',
     subtitle: 'حارس أسطوري - إبيك بوستر ريال مدريد',
     type: 'special_player',
@@ -52,8 +61,8 @@ export const DEFAULT_PRIZES: PrizeOption[] = [
   },
   { 
     id: 'better_luck', 
-    weight: 97, 
-    index: 4,
+    weight: 96, 
+    index: 5,
     name: 'حظ أوفر',
     subtitle: 'حاول مجدداً في السحب القادم',
     type: 'better_luck',

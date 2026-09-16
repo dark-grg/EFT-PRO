@@ -86,6 +86,8 @@ export class WheelService {
 
       if (spinRes.prizeId === 'coins_150') {
         await EconomyService.addCoins(userId, 150, 'Wheel Reward');
+      } else if (spinRes.prizeId === 'coins_250') {
+        await EconomyService.addCoins(userId, 250, 'Wheel Reward');
       }
     } catch {
       // Non-blocking

@@ -460,6 +460,64 @@ app.get("/api/time", (_req: Request, res: Response): void => {
   });
 });
 
+// Wheel Canonical Prizes Endpoint
+app.get("/api/wheel/prizes", (_req: Request, res: Response): void => {
+  res.json({
+    ok: true,
+    prizes: [
+      {
+        id: "suarez",
+        name: "لاعب مميز: لويس سواريز",
+        subtitle: "طاقات 104 OVR - إبيك بوستر",
+        type: "special_player",
+        iconColor: "#EAB308",
+        percentage: 1,
+        isSpecial: true
+      },
+      {
+        id: "coins_150",
+        name: "150 كوينز",
+        subtitle: "شحن كوينز مجاني للحساب",
+        type: "coins",
+        iconColor: "#F59E0B",
+        percentage: 1
+      },
+      {
+        id: "coins_250",
+        name: "250 كوينز",
+        subtitle: "شحن كوينز إضافي مجاني",
+        type: "coins",
+        iconColor: "#F59E0B",
+        percentage: 1
+      },
+      {
+        id: "ipad_prize",
+        name: "جهاز iPad Pro M4",
+        subtitle: "أحدث جهاز من Apple بشاشة 120Hz فائقة السرعة",
+        type: "ipad",
+        iconColor: "#06B6D4",
+        percentage: 0
+      },
+      {
+        id: "casillas",
+        name: "إيكر كاسياس 105",
+        subtitle: "حارس أسطوري - إبيك بوستر OVR 105",
+        type: "special_player",
+        iconColor: "#38BDF8",
+        percentage: 1
+      },
+      {
+        id: "better_luck",
+        name: "حظ أوفر",
+        subtitle: "حاول مجدداً في السحب القادم",
+        type: "better_luck",
+        iconColor: "#94A3B8",
+        percentage: 96
+      }
+    ]
+  });
+});
+
 // Wheel Status Endpoint (Check 24h Cooldown via Server Time)
 app.get("/api/wheel/status", (req: Request, res: Response): void => {
   const deviceId = (req.query.deviceId as string)?.trim();
@@ -543,15 +601,17 @@ app.post("/api/wheel/spin", (req: Request, res: Response): void => {
     // Weighted Random Calculation
     // [0] suarez: 1%
     // [1] coins_150: 1%
-    // [2] ipad_prize: 0%
-    // [3] casillas: 1%
-    // [4] better_luck: 97%
+    // [2] coins_250: 1%
+    // [3] ipad_prize: 0%
+    // [4] casillas: 1%
+    // [5] better_luck: 96%
     const prizes = [
       { id: "suarez", weight: 1, index: 0 },
       { id: "coins_150", weight: 1, index: 1 },
-      { id: "ipad_prize", weight: 0, index: 2 },
-      { id: "casillas", weight: 1, index: 3 },
-      { id: "better_luck", weight: 97, index: 4 }
+      { id: "coins_250", weight: 1, index: 2 },
+      { id: "ipad_prize", weight: 0, index: 3 },
+      { id: "casillas", weight: 1, index: 4 },
+      { id: "better_luck", weight: 96, index: 5 }
     ];
 
     const totalWeight = prizes.reduce((acc, p) => acc + p.weight, 0);
