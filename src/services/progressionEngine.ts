@@ -1,4 +1,7 @@
 import { PlayerBaseStats, ProgressionAllocation, StatDiffItem, PlayerCard } from '../types/playerCard';
+import { computeOverallRating, applyProgression } from './efhubEngine';
+
+export { computeOverallRating, computeOverallRatingDecimal, applyProgression } from './efhubEngine';
 
 export const STAT_DEFINITIONS: Record<string, { name: string; arabicName: string; category: string }> = {
   offensiveAwareness: { name: 'Offensive Awareness', arabicName: 'الوعي الهجومي', category: 'Attacking' },
@@ -152,9 +155,9 @@ export function calculateProgressionStats(
     });
   }
 
-  // 4. Cap stats at 105 (eFootball mobile upper cap for top booster cards)
+  // 4. Cap stats at bounds (40 min, 120 max to allow booster overflow naturally)
   Object.keys(statsAfter).forEach((key) => {
-    statsAfter[key] = Math.min(105, Math.max(statsBefore[key] || 40, statsAfter[key]));
+    statsAfter[key] = Math.min(120, Math.max(statsBefore[key] || 40, statsAfter[key]));
   });
 
   // 5. Generate precise Before / After / Diff map
@@ -173,13 +176,17 @@ export function calculateProgressionStats(
   });
 
   // 6. Calculate Final Overall Rating
-  // Base overall + rating gain from progression points (approx 1 rating per 4-5 key points) + booster
-  const totalPoints = calculateUsedPoints(points);
-  const boosterBoost = (applyBooster && card.boosters) ? (card.boosters.value || 2) : 0;
-  
-  // Calculate realistic rating boost
-  const progressionBoost = Math.min(9, Math.round(totalPoints / 5));
-  const calculatedOvr = Math.min(card.maxOverall || 105, card.overall + progressionBoost + boosterBoost);
+  // If the card has authentic maxOverall from eFHUB, honor it precisely.
+  // Otherwise, compute it using the authentic eFHUB mathematical rating algorithm.
+  let calculatedOvr = card.maxOverall;
+  if (!calculatedOvr || calculatedOvr <= 0) {
+    calculatedOvr = computeOverallRating({
+      position: card.position,
+      height: card.height || 175,
+      weakFootAccuracy: card.weakFootAccuracy || 2,
+      stats: statsAfter
+    });
+  }
 
   return {
     statsBefore,

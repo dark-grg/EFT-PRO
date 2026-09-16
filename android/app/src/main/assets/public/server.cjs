@@ -591,6 +591,263 @@ app.post("/api/efhub/parse", async (req, res) => {
     });
   }
 });
+app.post("/api/efootbase/import", async (req, res) => {
+  try {
+    const rawInput = req.body.urls || req.body.url || req.body.input;
+    let urlList = [];
+    if (Array.isArray(rawInput)) {
+      urlList = rawInput.map((u) => String(u).trim()).filter(Boolean);
+    } else if (typeof rawInput === "string") {
+      urlList = rawInput.split(/[\n,]+/).map((u) => u.trim()).filter(Boolean);
+    }
+    if (urlList.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: "Missing URLs",
+        message: "\u064A\u0631\u062C\u0649 \u0625\u062F\u062E\u0627\u0644 \u0631\u0627\u0628\u0637 eFootBase \u0635\u0627\u0644\u062D \u0639\u0644\u0649 \u0627\u0644\u0623\u0642\u0644."
+      });
+      return;
+    }
+    const importedCards = [];
+    const importedRecords = [];
+    const errors = [];
+    for (const rawUrl of urlList) {
+      try {
+        let urlObj;
+        try {
+          urlObj = new URL(rawUrl);
+        } catch {
+          errors.push(`\u0631\u0627\u0628\u0637 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D: ${rawUrl}`);
+          continue;
+        }
+        const params = urlObj.searchParams;
+        const sho = parseInt(params.get("sho") || "0", 10);
+        const pas = parseInt(params.get("pas") || "0", 10);
+        const dri = parseInt(params.get("dri") || "0", 10);
+        const dex = parseInt(params.get("dex") || "0", 10);
+        const lbs = parseInt(params.get("lbs") || "0", 10);
+        const aer = parseInt(params.get("aer") || "0", 10);
+        const def = parseInt(params.get("def") || "0", 10);
+        const gk1 = parseInt(params.get("gk1") || "0", 10);
+        const gk2 = parseInt(params.get("gk2") || "0", 10);
+        const gk3 = parseInt(params.get("gk3") || "0", 10);
+        const pathMatch = urlObj.pathname.match(/players\/(\d+)\/(\d+)/) || urlObj.pathname.match(/players\/(\d+)/);
+        if (!pathMatch) {
+          errors.push(`\u0644\u0645 \u064A\u062A\u0645 \u0627\u0644\u0639\u062B\u0648\u0631 \u0639\u0644\u0649 \u0645\u0639\u0631\u0651\u0641 \u0627\u0644\u0644\u0627\u0639\u0628/\u0627\u0644\u0628\u0637\u0627\u0642\u0629 \u0641\u064A \u0627\u0644\u0631\u0627\u0628\u0637: ${rawUrl}`);
+          continue;
+        }
+        const playerId = pathMatch[1];
+        const cardId = pathMatch[2] || pathMatch[1];
+        const targetUrl = `https://efootbase.com/ar/players/${playerId}/${cardId}`;
+        const fetchRes = await fetch(targetUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+          },
+          signal: AbortSignal.timeout(1e4)
+        });
+        if (!fetchRes.ok) {
+          errors.push(`\u0641\u0634\u0644 \u0627\u0644\u0627\u062A\u0635\u0627\u0644 \u0628\u0640 eFootBase \u0644\u0644\u0628\u0637\u0627\u0642\u0629 ${cardId} (Status: ${fetchRes.status})`);
+          continue;
+        }
+        const html = await fetchRes.text();
+        const ogTitle = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i)?.[1] || "";
+        const ogImage = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i)?.[1] || `https://cdn.assets.efootbase.com/eFPlayers/players/${cardId}/dynamic.webp`;
+        const ogDesc = html.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i)?.[1] || "";
+        const titleParts = ogTitle.split("\xB7").map((s) => s.trim());
+        const playerName = titleParts[0] || "Unknown Player";
+        const clubName = titleParts[1] || "";
+        const baseOvrMatch = ogDesc.match(/تقييمها\s*(\d+)/) || ogDesc.match(/rating of\s*(\d+)/i) || ogDesc.match(/(\d+)\s*OVR/i);
+        const maxOvrMatch = ogDesc.match(/تصل هذه البطاقة إلى\s*(\d+)\s*OVR/) || ogDesc.match(/max(?:imum)?\s*(?:level|overall|ovr)?\s*(?:of)?\s*(\d+)/i);
+        const posMatch = ogDesc.match(/\b(CF|SS|LWF|RWF|AMF|CMF|DMF|LMF|RMF|CB|LB|RB|GK)\b/i);
+        let baseStats = null;
+        const baseMatch = html.match(/\\"base\\":\{([^}]+)\}/) || html.match(/"base":\{([^}]+)\}/);
+        if (baseMatch) {
+          try {
+            const cleanJson = "{" + baseMatch[1].replace(/\\"/g, '"') + "}";
+            baseStats = JSON.parse(cleanJson);
+          } catch {
+          }
+        }
+        let maxLevel = 30;
+        const maxLevelMatch = html.match(/\\"maxLevel\\":(\d+)/) || html.match(/"maxLevel":(\d+)/);
+        if (maxLevelMatch) {
+          maxLevel = parseInt(maxLevelMatch[1], 10);
+        }
+        let cardType = "Highlight";
+        if (/Epic/i.test(html) || /Epic/i.test(ogTitle) || /Epic/i.test(ogDesc)) cardType = "Epic Booster";
+        else if (/Big Time/i.test(html)) cardType = "Big Time";
+        else if (/Show Time/i.test(html)) cardType = "Show Time";
+        else if (/POTW/i.test(html)) cardType = "POTW";
+        const overall = baseOvrMatch ? parseInt(baseOvrMatch[1], 10) : 84;
+        const maxOverall = maxOvrMatch ? parseInt(maxOvrMatch[1], 10) : overall + 14;
+        const position = posMatch ? posMatch[1].toUpperCase() : "CF";
+        const pointsUsed = sho + pas + dri + dex + lbs + aer + def + gk1 + gk2 + gk3;
+        const pointsAvailable = Math.max(pointsUsed, (maxLevel - 1) * 2);
+        const card = {
+          id: cardId,
+          cardId,
+          clubName: clubName || "eFootBase Club",
+          cardVersion: "2025",
+          version: "2025",
+          source: "eFootBase",
+          sourceUrl: rawUrl,
+          sourceCardId: cardId,
+          sourceVersion: "eFootBase 2025/2026",
+          playerId: playerName.toLowerCase().replace(/[^a-z0-9]+/g, "-") || playerId,
+          playerName,
+          arabicName: "",
+          cardName: `${playerName} (${clubName})`,
+          cardType,
+          cardImageUrl: ogImage,
+          overall,
+          baseOverall: overall,
+          maxOverall,
+          position,
+          team: clubName || "eFootBase Club",
+          nationality: clubName,
+          playingStyle: "Goal Poacher",
+          level: 1,
+          maxLevel,
+          progressionPoints: {
+            shooting: sho,
+            passing: pas,
+            dribbling: dri,
+            dexterity: dex,
+            lowerBody: lbs,
+            aerial: aer,
+            defending: def,
+            gk1,
+            gk2,
+            gk3
+          },
+          baseStats: baseStats || {
+            offensiveAwareness: overall - 2,
+            ballControl: overall - 1,
+            dribbling: overall - 2,
+            tightPossession: overall - 2,
+            lowPass: overall - 6,
+            loftedPass: overall - 8,
+            finishing: overall - 3,
+            heading: 75,
+            placeKicking: 70,
+            curl: 72,
+            speed: overall - 3,
+            acceleration: overall - 1,
+            kickingPower: overall - 2,
+            jump: 72,
+            physicalContact: 74,
+            balance: 75,
+            stamina: 74
+          },
+          skills: ["First-Time Shot", "Acrobatic Finishing"],
+          createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+          lastUpdated: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        const progressionRecord = {
+          cardId,
+          playerName,
+          position,
+          club: clubName,
+          cardType,
+          baseOverall: overall,
+          maxOverall,
+          pointsAvailable,
+          pointsUsed,
+          progression: {
+            shooting: sho,
+            passing: pas,
+            dribbling: dri,
+            dexterity: dex,
+            lowerBodyStrength: lbs,
+            aerialStrength: aer,
+            defending: def,
+            gk1,
+            gk2,
+            gk3
+          },
+          source: "eFootBase",
+          sourceUrl: rawUrl,
+          sourceVersion: "eFootBase 2025/2026",
+          status: "VERIFIED_SOURCE",
+          dataVersion: "efootbase-v1",
+          importedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        importedCards.push(card);
+        importedRecords.push(progressionRecord);
+      } catch (itemErr) {
+        errors.push(`\u062E\u0637\u0623 \u0623\u062B\u0646\u0627\u0621 \u0645\u0639\u0627\u0644\u062C\u0629 ${rawUrl}: ${itemErr?.message || itemErr}`);
+      }
+    }
+    if (importedCards.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: "Import failed",
+        message: errors.join(" | ") || "\u0644\u0645 \u0646\u062A\u0645\u0643\u0646 \u0645\u0646 \u0627\u0633\u062A\u064A\u0631\u0627\u062F \u0623\u064A \u0628\u0637\u0627\u0642\u0629."
+      });
+      return;
+    }
+    try {
+      const dataDir = import_path.default.join(process.cwd(), "data");
+      const srcDataDir = import_path.default.join(process.cwd(), "src", "data");
+      if (!import_fs.default.existsSync(dataDir)) import_fs.default.mkdirSync(dataDir, { recursive: true });
+      if (!import_fs.default.existsSync(srcDataDir)) import_fs.default.mkdirSync(srcDataDir, { recursive: true });
+      const playerCardsPath = import_path.default.join(dataDir, "playerCards.json");
+      let allCards = [];
+      if (import_fs.default.existsSync(playerCardsPath)) {
+        try {
+          allCards = JSON.parse(import_fs.default.readFileSync(playerCardsPath, "utf-8"));
+        } catch {
+          allCards = [];
+        }
+      }
+      for (const newCard of importedCards) {
+        const idx = allCards.findIndex((c) => c.id === newCard.id || c.cardId === newCard.cardId);
+        if (idx !== -1) {
+          allCards[idx] = newCard;
+        } else {
+          allCards.push(newCard);
+        }
+      }
+      import_fs.default.writeFileSync(playerCardsPath, JSON.stringify(allCards, null, 2), "utf-8");
+      const updateProgFile = (filePath) => {
+        let progObj = { dataVersion: "efootbase-v1", records: {} };
+        if (import_fs.default.existsSync(filePath)) {
+          try {
+            const parsed = JSON.parse(import_fs.default.readFileSync(filePath, "utf-8"));
+            if (parsed && typeof parsed === "object") {
+              progObj = parsed.records ? parsed : { dataVersion: "efootbase-v1", records: parsed };
+            }
+          } catch {
+            progObj = { dataVersion: "efootbase-v1", records: {} };
+          }
+        }
+        if (!progObj.records) progObj.records = {};
+        for (const r of importedRecords) {
+          progObj.records[r.cardId] = r;
+        }
+        import_fs.default.writeFileSync(filePath, JSON.stringify(progObj, null, 2), "utf-8");
+      };
+      updateProgFile(import_path.default.join(dataDir, "efootbaseProgressions.json"));
+      updateProgFile(import_path.default.join(srcDataDir, "efootbaseProgressions.json"));
+    } catch (persistErr) {
+      console.error("Error persisting eFootBase import to disk:", persistErr);
+    }
+    res.json({
+      success: true,
+      count: importedCards.length,
+      cards: importedCards,
+      records: importedRecords,
+      errors: errors.length > 0 ? errors : void 0
+    });
+  } catch (err) {
+    console.error("eFootBase import error:", err);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: err?.message || "\u062D\u062F\u062B \u062E\u0637\u0623 \u063A\u064A\u0631 \u0645\u062A\u0648\u0642\u0639 \u0641\u064A \u0627\u0644\u062E\u0627\u062F\u0645."
+    });
+  }
+});
 app.post("/api/admin/resync-players", async (_req, res) => {
   const targetStarSlugs = [
     { name: "Lionel Messi", id: "89138556575063" },
@@ -765,6 +1022,34 @@ app.post("/api/admin/resync-players", async (_req, res) => {
       error: "\u0641\u0634\u0644 \u062A\u062D\u062F\u064A\u062B \u0627\u0644\u0644\u0627\u0639\u0628\u064A\u0646\u060C \u062A\u0645 \u0627\u0644\u0627\u062D\u062A\u0641\u0627\u0638 \u0628\u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u062D\u0627\u0644\u064A\u0629.",
       message: syncError?.message || "\u062D\u062F\u062B \u062E\u0637\u0623 \u063A\u064A\u0631 \u0645\u062A\u0648\u0642\u0639 \u0623\u062B\u0646\u0627\u0621 \u0627\u0633\u062A\u064A\u0631\u0627\u062F \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A."
     });
+  }
+});
+app.get("/api/players/:cardId/progression", (req, res) => {
+  try {
+    const { cardId } = req.params;
+    const dataFilePath = import_path.default.join(process.cwd(), "data", "canonicalProgressions.json");
+    if (import_fs.default.existsSync(dataFilePath)) {
+      const db = JSON.parse(import_fs.default.readFileSync(dataFilePath, "utf-8"));
+      const record = db.find((r) => r.cardId === cardId);
+      if (record && record.progressionStatus === "available") {
+        res.json({
+          ok: true,
+          cardId: record.cardId,
+          progressionStatus: "available",
+          progression: record.categories,
+          sources: record.sourceUrls || []
+        });
+        return;
+      }
+    }
+    res.json({
+      ok: true,
+      cardId,
+      progressionStatus: "unavailable",
+      progression: null
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 app.get("/api/players/cards", (_req, res) => {

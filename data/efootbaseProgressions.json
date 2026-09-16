@@ -1,0 +1,34 @@
+{
+  "dataVersion": "efootbase-v1",
+  "records": {
+    "88033407929826": {
+      "cardId": "88033407929826",
+      "playerName": "Giovane Élber",
+      "position": "CF",
+      "club": "FC Bayern München 00-01",
+      "cardType": "Epic Booster",
+      "baseOverall": 84,
+      "maxOverall": 98,
+      "pointsAvailable": 62,
+      "pointsUsed": 38,
+      "progression": {
+        "shooting": 10,
+        "passing": 0,
+        "dribbling": 4,
+        "dexterity": 12,
+        "lowerBodyStrength": 8,
+        "aerialStrength": 4,
+        "defending": 0,
+        "gk1": 0,
+        "gk2": 0,
+        "gk3": 0
+      },
+      "source": "eFootBase",
+      "sourceUrl": "https://efootbase.com/ar/players/134626/88033407929826?sho=10&dri=4&dex=12&lbs=8&aer=4",
+      "sourceVersion": "eFootBase 2025/2026",
+      "status": "VERIFIED_SOURCE",
+      "dataVersion": "efootbase-v1",
+      "importedAt": "2026-09-16T09:23:14.423Z"
+    }
+  }
+}

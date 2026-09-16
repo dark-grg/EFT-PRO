@@ -17,7 +17,7 @@ export type PlayerPositionType =
 export interface PlayerBaseStats {
   offensiveAwareness: number;
   ballControl: number;
-  dribbling: number;
+  dribbling?: number;
   tightPossession: number;
   lowPass: number;
   loftedPass: number;
@@ -65,7 +65,7 @@ export interface PlayerCard {
   efhubUrl?: string; // e.g. "https://efhub.com/tr/players/105873896755947"
   lastSyncedAt?: string; // ISO 8601 string
   version: string; // e.g. "2022", "2015", "2025"
-  source: 'eFHUB' | 'PES Master' | 'eFootballLAB' | 'Konami Official' | 'Manual Source Import';
+  source: 'eFHUB' | 'eFootBase' | 'PES Master' | 'eFootballLAB' | 'Konami Official' | 'Manual Source Import';
   sourceUrl: string;
   sourceCardId: string; // ID from eFHUB
   sourceVersion: string; // e.g. "eFootball 2025 v4.2.0"
@@ -88,6 +88,9 @@ export interface PlayerCard {
   
   level: number; // Default 1
   maxLevel: number; // Max training level (e.g. 28)
+  height?: number; // Player height in cm
+  weakFootAccuracy?: number; // 1 to 4
+  progressionPoints?: ProgressionAllocation; // Authentic progression points from eFHUB
   
   baseStats: PlayerBaseStats;
   skills: string[];
@@ -98,13 +101,13 @@ export interface PlayerCard {
 }
 
 export interface ProgressionAllocation {
-  shooting: number;
-  passing: number;
-  dribbling: number;
-  dexterity: number;
-  lowerBody: number;
-  aerial: number;
-  defending: number;
+  shooting?: number;
+  passing?: number;
+  dribbling?: number;
+  dexterity?: number;
+  lowerBody?: number;
+  aerial?: number;
+  defending?: number;
   gk1?: number;
   gk2?: number;
   gk3?: number;

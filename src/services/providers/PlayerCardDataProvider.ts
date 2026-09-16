@@ -2,9 +2,9 @@ import { PlayerCard } from '../../types/playerCard';
 
 export interface PlayerCardDataProvider {
   /**
-   * Name of the data provider source (e.g., 'eFHUB', 'PES Master', 'eFootballLAB')
+   * Name of the data provider source (e.g., 'eFootBase', 'eFHUB', 'PES Master', 'eFootballLAB')
    */
-  readonly sourceName: 'eFHUB' | 'PES Master' | 'eFootballLAB' | 'Konami Official' | 'Manual Source Import';
+  readonly sourceName: 'eFootBase' | 'eFHUB' | 'PES Master' | 'eFootballLAB' | 'Konami Official' | 'Manual Source Import' | 'Aggregated';
 
   /**
    * Base website URL of the provider

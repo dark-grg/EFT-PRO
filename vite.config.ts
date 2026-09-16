@@ -67,6 +67,9 @@ function aistudioMediaPlugin(): Plugin {
 export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss(), aistudioMediaPlugin()],
+    build: {
+      target: 'es2020',
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

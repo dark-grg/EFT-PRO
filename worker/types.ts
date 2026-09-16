@@ -9,9 +9,19 @@ export interface Env {
   // Cloudflare KV Namespace for Wheel and Player Storage
   WHEEL_STORE?: KVNamespace;
   PLAYERS_STORE?: KVNamespace;
+  PLAYER_DEVELOPMENTS_STORE?: KVNamespace;
 
   // Cloudflare Durable Objects binding for Atomic Concurrency & Cooldown
   WHEEL_DO?: DurableObjectNamespace;
+
+  // Cloudflare D1 Database
+  DB?: D1Database;
+
+  // Cloudflare R2 Bucket for Images
+  IMAGES_BUCKET?: R2Bucket;
+
+  // Admin secret key
+  ADMIN_SECRET?: string;
 
   // Environment mode
   ENVIRONMENT?: string;

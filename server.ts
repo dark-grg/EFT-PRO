@@ -714,6 +714,298 @@ app.post("/api/efhub/parse", async (req: Request, res: Response): Promise<void> 
   }
 });
 
+// eFootBase Import Endpoint: accepts single/multiple URLs with progression parameters (?sho=10&dri=4...)
+app.post("/api/efootbase/import", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const rawInput = req.body.urls || req.body.url || req.body.input;
+    let urlList: string[] = [];
+
+    if (Array.isArray(rawInput)) {
+      urlList = rawInput.map(u => String(u).trim()).filter(Boolean);
+    } else if (typeof rawInput === "string") {
+      urlList = rawInput.split(/[\n,]+/).map(u => u.trim()).filter(Boolean);
+    }
+
+    if (urlList.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: "Missing URLs",
+        message: "يرجى إدخال رابط eFootBase صالح على الأقل."
+      });
+      return;
+    }
+
+    const importedCards: any[] = [];
+    const importedRecords: any[] = [];
+    const errors: string[] = [];
+
+    for (const rawUrl of urlList) {
+      try {
+        let urlObj: URL;
+        try {
+          urlObj = new URL(rawUrl);
+        } catch {
+          errors.push(`رابط غير صالح: ${rawUrl}`);
+          continue;
+        }
+
+        const params = urlObj.searchParams;
+        const sho = parseInt(params.get("sho") || "0", 10);
+        const pas = parseInt(params.get("pas") || "0", 10);
+        const dri = parseInt(params.get("dri") || "0", 10);
+        const dex = parseInt(params.get("dex") || "0", 10);
+        const lbs = parseInt(params.get("lbs") || "0", 10);
+        const aer = parseInt(params.get("aer") || "0", 10);
+        const def = parseInt(params.get("def") || "0", 10);
+        const gk1 = parseInt(params.get("gk1") || "0", 10);
+        const gk2 = parseInt(params.get("gk2") || "0", 10);
+        const gk3 = parseInt(params.get("gk3") || "0", 10);
+
+        const pathMatch = urlObj.pathname.match(/players\/(\d+)\/(\d+)/) || urlObj.pathname.match(/players\/(\d+)/);
+        if (!pathMatch) {
+          errors.push(`لم يتم العثور على معرّف اللاعب/البطاقة في الرابط: ${rawUrl}`);
+          continue;
+        }
+
+        const playerId = pathMatch[1];
+        const cardId = pathMatch[2] || pathMatch[1];
+
+        // Fetch page from eFootBase
+        const targetUrl = `https://efootbase.com/ar/players/${playerId}/${cardId}`;
+        const fetchRes = await fetch(targetUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+          },
+          signal: AbortSignal.timeout(10000)
+        });
+
+        if (!fetchRes.ok) {
+          errors.push(`فشل الاتصال بـ eFootBase للبطاقة ${cardId} (Status: ${fetchRes.status})`);
+          continue;
+        }
+
+        const html = await fetchRes.text();
+
+        const ogTitle = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i)?.[1] || "";
+        const ogImage = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i)?.[1] || `https://cdn.assets.efootbase.com/eFPlayers/players/${cardId}/dynamic.webp`;
+        const ogDesc = html.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']/i)?.[1] || "";
+
+        const titleParts = ogTitle.split("·").map(s => s.trim());
+        const playerName = titleParts[0] || "Unknown Player";
+        const clubName = titleParts[1] || "";
+
+        const baseOvrMatch = ogDesc.match(/تقييمها\s*(\d+)/) || ogDesc.match(/rating of\s*(\d+)/i) || ogDesc.match(/(\d+)\s*OVR/i);
+        const maxOvrMatch = ogDesc.match(/تصل هذه البطاقة إلى\s*(\d+)\s*OVR/) || ogDesc.match(/max(?:imum)?\s*(?:level|overall|ovr)?\s*(?:of)?\s*(\d+)/i);
+        const posMatch = ogDesc.match(/\b(CF|SS|LWF|RWF|AMF|CMF|DMF|LMF|RMF|CB|LB|RB|GK)\b/i);
+
+        let baseStats = null;
+        const baseMatch = html.match(/\\"base\\":\{([^}]+)\}/) || html.match(/"base":\{([^}]+)\}/);
+        if (baseMatch) {
+          try {
+            const cleanJson = "{" + baseMatch[1].replace(/\\"/g, "\"") + "}";
+            baseStats = JSON.parse(cleanJson);
+          } catch {
+            // ignore
+          }
+        }
+
+        let maxLevel = 30;
+        const maxLevelMatch = html.match(/\\"maxLevel\\":(\d+)/) || html.match(/"maxLevel":(\d+)/);
+        if (maxLevelMatch) {
+          maxLevel = parseInt(maxLevelMatch[1], 10);
+        }
+
+        let cardType = "Highlight";
+        if (/Epic/i.test(html) || /Epic/i.test(ogTitle) || /Epic/i.test(ogDesc)) cardType = "Epic Booster";
+        else if (/Big Time/i.test(html)) cardType = "Big Time";
+        else if (/Show Time/i.test(html)) cardType = "Show Time";
+        else if (/POTW/i.test(html)) cardType = "POTW";
+
+        const overall = baseOvrMatch ? parseInt(baseOvrMatch[1], 10) : 84;
+        const maxOverall = maxOvrMatch ? parseInt(maxOvrMatch[1], 10) : (overall + 14);
+        const position = (posMatch ? posMatch[1].toUpperCase() : "CF");
+
+        const pointsUsed = sho + pas + dri + dex + lbs + aer + def + gk1 + gk2 + gk3;
+        const pointsAvailable = Math.max(pointsUsed, (maxLevel - 1) * 2);
+
+        const card = {
+          id: cardId,
+          cardId: cardId,
+          clubName: clubName || "eFootBase Club",
+          cardVersion: "2025",
+          version: "2025",
+          source: "eFootBase",
+          sourceUrl: rawUrl,
+          sourceCardId: cardId,
+          sourceVersion: "eFootBase 2025/2026",
+          playerId: playerName.toLowerCase().replace(/[^a-z0-9]+/g, "-") || playerId,
+          playerName: playerName,
+          arabicName: "",
+          cardName: `${playerName} (${clubName})`,
+          cardType: cardType,
+          cardImageUrl: ogImage,
+          overall: overall,
+          baseOverall: overall,
+          maxOverall: maxOverall,
+          position: position,
+          team: clubName || "eFootBase Club",
+          nationality: clubName,
+          playingStyle: "Goal Poacher",
+          level: 1,
+          maxLevel: maxLevel,
+          progressionPoints: {
+            shooting: sho,
+            passing: pas,
+            dribbling: dri,
+            dexterity: dex,
+            lowerBody: lbs,
+            aerial: aer,
+            defending: def,
+            gk1: gk1,
+            gk2: gk2,
+            gk3: gk3
+          },
+          baseStats: baseStats || {
+            offensiveAwareness: overall - 2,
+            ballControl: overall - 1,
+            dribbling: overall - 2,
+            tightPossession: overall - 2,
+            lowPass: overall - 6,
+            loftedPass: overall - 8,
+            finishing: overall - 3,
+            heading: 75,
+            placeKicking: 70,
+            curl: 72,
+            speed: overall - 3,
+            acceleration: overall - 1,
+            kickingPower: overall - 2,
+            jump: 72,
+            physicalContact: 74,
+            balance: 75,
+            stamina: 74
+          },
+          skills: ["First-Time Shot", "Acrobatic Finishing"],
+          createdAt: new Date().toISOString(),
+          lastUpdated: new Date().toISOString()
+        };
+
+        const progressionRecord = {
+          cardId: cardId,
+          playerName: playerName,
+          position: position,
+          club: clubName,
+          cardType: cardType,
+          baseOverall: overall,
+          maxOverall: maxOverall,
+          pointsAvailable: pointsAvailable,
+          pointsUsed: pointsUsed,
+          progression: {
+            shooting: sho,
+            passing: pas,
+            dribbling: dri,
+            dexterity: dex,
+            lowerBodyStrength: lbs,
+            aerialStrength: aer,
+            defending: def,
+            gk1: gk1,
+            gk2: gk2,
+            gk3: gk3
+          },
+          source: "eFootBase",
+          sourceUrl: rawUrl,
+          sourceVersion: "eFootBase 2025/2026",
+          status: "VERIFIED_SOURCE",
+          dataVersion: "efootbase-v1",
+          importedAt: new Date().toISOString()
+        };
+
+        importedCards.push(card);
+        importedRecords.push(progressionRecord);
+      } catch (itemErr: any) {
+        errors.push(`خطأ أثناء معالجة ${rawUrl}: ${itemErr?.message || itemErr}`);
+      }
+    }
+
+    if (importedCards.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: "Import failed",
+        message: errors.join(" | ") || "لم نتمكن من استيراد أي بطاقة."
+      });
+      return;
+    }
+
+    // Persist to disk files
+    try {
+      const dataDir = path.join(process.cwd(), "data");
+      const srcDataDir = path.join(process.cwd(), "src", "data");
+
+      if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+      if (!fs.existsSync(srcDataDir)) fs.mkdirSync(srcDataDir, { recursive: true });
+
+      // 1. Update data/playerCards.json
+      const playerCardsPath = path.join(dataDir, "playerCards.json");
+      let allCards: any[] = [];
+      if (fs.existsSync(playerCardsPath)) {
+        try {
+          allCards = JSON.parse(fs.readFileSync(playerCardsPath, "utf-8"));
+        } catch {
+          allCards = [];
+        }
+      }
+      for (const newCard of importedCards) {
+        const idx = allCards.findIndex(c => c.id === newCard.id || c.cardId === newCard.cardId);
+        if (idx !== -1) {
+          allCards[idx] = newCard;
+        } else {
+          allCards.push(newCard);
+        }
+      }
+      fs.writeFileSync(playerCardsPath, JSON.stringify(allCards, null, 2), "utf-8");
+
+      // 2. Update efootbaseProgressions.json in both data and src/data
+      const updateProgFile = (filePath: string) => {
+        let progObj: any = { dataVersion: "efootbase-v1", records: {} };
+        if (fs.existsSync(filePath)) {
+          try {
+            const parsed = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+            if (parsed && typeof parsed === "object") {
+              progObj = parsed.records ? parsed : { dataVersion: "efootbase-v1", records: parsed };
+            }
+          } catch {
+            progObj = { dataVersion: "efootbase-v1", records: {} };
+          }
+        }
+        if (!progObj.records) progObj.records = {};
+        for (const r of importedRecords) {
+          progObj.records[r.cardId] = r;
+        }
+        fs.writeFileSync(filePath, JSON.stringify(progObj, null, 2), "utf-8");
+      };
+
+      updateProgFile(path.join(dataDir, "efootbaseProgressions.json"));
+      updateProgFile(path.join(srcDataDir, "efootbaseProgressions.json"));
+    } catch (persistErr) {
+      console.error("Error persisting eFootBase import to disk:", persistErr);
+    }
+
+    res.json({
+      success: true,
+      count: importedCards.length,
+      cards: importedCards,
+      records: importedRecords,
+      errors: errors.length > 0 ? errors : undefined
+    });
+  } catch (err: any) {
+    console.error("eFootBase import error:", err);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: err?.message || "حدث خطأ غير متوقع في الخادم."
+    });
+  }
+});
+
 // Admin Full Re-Sync Endpoint from eFHUB (PREPARE -> IMPORT -> VALIDATE -> REPLACE)
 app.post("/api/admin/resync-players", async (_req: Request, res: Response): Promise<void> => {
   const targetStarSlugs = [
@@ -919,6 +1211,41 @@ app.post("/api/admin/resync-players", async (_req: Request, res: Response): Prom
       error: "فشل تحديث اللاعبين، تم الاحتفاظ بالبيانات الحالية.",
       message: syncError?.message || "حدث خطأ غير متوقع أثناء استيراد البيانات."
     });
+  }
+});
+
+
+// GET Canonical Progression
+app.get("/api/players/:cardId/progression", (req, res) => {
+  try {
+    const { cardId } = req.params;
+    // We would normally read from a canonical progressions DB file here.
+    // For now we will return a simulated structure 
+    // that the frontend expects.
+    const dataFilePath = path.join(process.cwd(), "data", "canonicalProgressions.json");
+    if (fs.existsSync(dataFilePath)) {
+      const db = JSON.parse(fs.readFileSync(dataFilePath, "utf-8"));
+      const record = db.find((r) => r.cardId === cardId);
+      if (record && record.progressionStatus === 'available') {
+        res.json({
+          ok: true,
+          cardId: record.cardId,
+          progressionStatus: "available",
+          progression: record.categories,
+          sources: record.sourceUrls || []
+        });
+        return;
+      }
+    }
+    
+    res.json({
+      ok: true,
+      cardId,
+      progressionStatus: "unavailable",
+      progression: null
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 

@@ -1,0 +1,265 @@
+{
+  "version": "1.0",
+  "records": [
+    {
+      "cardId": "ambiguous",
+      "playerName": "Bruno Guimarães",
+      "cardImageUrl": "ambiguous",
+      "progression": {
+        "shooting": 0,
+        "passing": 8,
+        "dribbling": 4,
+        "dexterity": 4,
+        "lowerBody": 8,
+        "aerial": 14,
+        "defending": 0,
+        "gk1": 0,
+        "gk2": 0,
+        "gk3": 0
+      },
+      "source": "uploaded_image",
+      "cardSource": "eFootBase",
+      "verified": false
+    },
+    {
+      "cardId": "ambiguous",
+      "playerName": "Karim Adeyemi",
+      "cardImageUrl": "ambiguous",
+      "progression": {
+        "shooting": 4,
+        "passing": 4,
+        "dribbling": 12,
+        "dexterity": 10,
+        "lowerBody": 8,
+        "aerial": 0,
+        "defending": 0,
+        "gk1": 0,
+        "gk2": 0,
+        "gk3": 0
+      },
+      "source": "uploaded_image",
+      "cardSource": "eFootBase",
+      "verified": false
+    },
+    {
+      "cardId": "ambiguous",
+      "playerName": "Philipp Lahm",
+      "cardImageUrl": "ambiguous",
+      "progression": {
+        "shooting": 0,
+        "passing": 4,
+        "dribbling": 4,
+        "dexterity": 8,
+        "lowerBody": 13,
+        "aerial": 0,
+        "defending": 8,
+        "gk1": 0,
+        "gk2": 0,
+        "gk3": 0
+      },
+      "source": "uploaded_image",
+      "cardSource": "eFootBase",
+      "verified": false
+    },
+    {
+      "cardId": "ambiguous",
+      "playerName": "Lilian Thuram",
+      "cardImageUrl": "ambiguous",
+      "progression": {
+        "shooting": 0,
+        "passing": 0,
+        "dribbling": 0,
+        "dexterity": 4,
+        "lowerBody": 5,
+        "aerial": 8,
+        "defending": 15,
+        "gk1": 0,
+        "gk2": 0,
+        "gk3": 0
+      },
+      "source": "uploaded_image",
+      "cardSource": "eFootBase",
+      "verified": false
+    },
+    {
+      "cardId": "ambiguous",
+      "playerName": "Fabio Cannavaro",
+      "cardImageUrl": "ambiguous",
+      "progression": {
+        "shooting": 0,
+        "passing": 0,
+        "dribbling": 0,
+        "dexterity": 4,
+        "lowerBody": 4,
+        "aerial": 8,
+        "defending": 14,
+        "gk1": 0,
+        "gk2": 0,
+        "gk3": 0
+      },
+      "source": "uploaded_image",
+      "cardSource": "eFootBase",
+      "verified": false
+    },
+    {
+      "cardId": "ambiguous",
+      "playerName": "Pelé",
+      "cardImageUrl": "ambiguous",
+      "progression": {
+        "shooting": 11,
+        "passing": 1,
+        "dribbling": 4,
+        "dexterity": 12,
+        "lowerBody": 8,
+        "aerial": 4,
+        "defending": 0,
+        "gk1": 0,
+        "gk2": 0,
+        "gk3": 0
+      },
+      "source": "uploaded_image",
+      "cardSource": "eFootBase",
+      "verified": false
+    },
+    {
+      "cardId": "ambiguous",
+      "playerName": "Edwin van der Sar",
+      "cardImageUrl": "ambiguous",
+      "progression": {
+        "shooting": 0,
+        "passing": 0,
+        "dribbling": 0,
+        "dexterity": 0,
+        "lowerBody": 0,
+        "aerial": 4,
+        "defending": 0,
+        "gk1": 12,
+        "gk2": 10,
+        "gk3": 8
+      },
+      "source": "uploaded_image",
+      "cardSource": "eFootBase",
+      "verified": false
+    },
+    {
+      "cardId": "ambiguous",
+      "playerName": "Wayne Rooney",
+      "cardImageUrl": "ambiguous",
+      "progression": {
+        "shooting": 8,
+        "passing": 4,
+        "dribbling": 12,
+        "dexterity": 8,
+        "lowerBody": 7,
+        "aerial": 0,
+        "defending": 0,
+        "gk1": 0,
+        "gk2": 0,
+        "gk3": 0
+      },
+      "source": "uploaded_image",
+      "cardSource": "eFootBase",
+      "verified": false
+    },
+    {
+      "cardId": "ambiguous",
+      "playerName": "Luis Suárez",
+      "cardImageUrl": "ambiguous",
+      "progression": {
+        "shooting": 11,
+        "passing": 1,
+        "dribbling": 4,
+        "dexterity": 12,
+        "lowerBody": 8,
+        "aerial": 4,
+        "defending": 0,
+        "gk1": 0,
+        "gk2": 0,
+        "gk3": 0
+      },
+      "source": "uploaded_image",
+      "cardSource": "eFootBase",
+      "verified": false
+    },
+    {
+      "cardId": "ambiguous",
+      "playerName": "Francesco Totti",
+      "cardImageUrl": "ambiguous",
+      "progression": {
+        "shooting": 4,
+        "passing": 8,
+        "dribbling": 12,
+        "dexterity": 8,
+        "lowerBody": 8,
+        "aerial": 0,
+        "defending": 0,
+        "gk1": 0,
+        "gk2": 0,
+        "gk3": 0
+      },
+      "source": "uploaded_image",
+      "cardSource": "eFootBase",
+      "verified": false
+    },
+    {
+      "cardId": "ambiguous",
+      "playerName": "K. Heinz Rummenigge",
+      "cardImageUrl": "ambiguous",
+      "progression": {
+        "shooting": 10,
+        "passing": 0,
+        "dribbling": 4,
+        "dexterity": 12,
+        "lowerBody": 8,
+        "aerial": 4,
+        "defending": 0,
+        "gk1": 0,
+        "gk2": 0,
+        "gk3": 0
+      },
+      "source": "uploaded_image",
+      "cardSource": "eFootBase",
+      "verified": false
+    },
+    {
+      "cardId": "ambiguous",
+      "playerName": "Alessandro Nesta",
+      "cardImageUrl": "ambiguous",
+      "progression": {
+        "shooting": 0,
+        "passing": 0,
+        "dribbling": 0,
+        "dexterity": 4,
+        "lowerBody": 4,
+        "aerial": 8,
+        "defending": 15,
+        "gk1": 0,
+        "gk2": 0,
+        "gk3": 0
+      },
+      "source": "uploaded_image",
+      "cardSource": "eFootBase",
+      "verified": false
+    },
+    {
+      "cardId": "ambiguous",
+      "playerName": "Alessandro Del Piero",
+      "cardImageUrl": "ambiguous",
+      "progression": {
+        "shooting": 11,
+        "passing": 1,
+        "dribbling": 4,
+        "dexterity": 12,
+        "lowerBody": 8,
+        "aerial": 4,
+        "defending": 0,
+        "gk1": 0,
+        "gk2": 0,
+        "gk3": 0
+      },
+      "source": "uploaded_image",
+      "cardSource": "eFootBase",
+      "verified": false
+    }
+  ]
+}

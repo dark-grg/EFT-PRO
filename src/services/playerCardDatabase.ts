@@ -4,8 +4,8 @@ import { defaultPlayerCardProvider } from './providers';
 import { calculateProgressionStats, calculateAvailablePoints, calculateUsedPoints } from './progressionEngine';
 import initialCardsData from '../data/efhubCards.json';
 
-const CARDS_STORAGE_KEY = 'pes_arena_playerCards_v5';
-const DEVELOPMENTS_STORAGE_KEY = 'pes_arena_playerDevelopments_v5';
+const CARDS_STORAGE_KEY = 'pes_arena_playerCards_v7';
+const DEVELOPMENTS_STORAGE_KEY = 'pes_arena_playerDevelopments_v7';
 
 // BroadcastChannel for instant cross-tab real-time reactivity
 const syncChannel = typeof BroadcastChannel !== 'undefined' 
@@ -49,9 +49,13 @@ export class PlayerCardDatabaseService {
   private async init() {
     if (this.initialized) return;
 
-    // Clean legacy storage versions to prevent corrupted/mismatched player names from persisting
+    // Clean legacy storage versions to prevent corrupted/mismatched player names or duplicate OVRs from persisting
     if (typeof localStorage !== 'undefined') {
       try {
+        localStorage.removeItem('pes_arena_playerCards_v6');
+        localStorage.removeItem('pes_arena_playerDevelopments_v6');
+        localStorage.removeItem('pes_arena_playerCards_v5');
+        localStorage.removeItem('pes_arena_playerDevelopments_v5');
         localStorage.removeItem('pes_arena_playerCards_v4');
         localStorage.removeItem('pes_arena_playerDevelopments_v4');
         localStorage.removeItem('pes_arena_playerCards_v3');
@@ -64,7 +68,18 @@ export class PlayerCardDatabaseService {
     this.loadCardsFromStorage();
     this.loadDevelopmentsFromStorage();
 
-    // If cards database is empty or was purged, immediately populate from verified efhubCardsData
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('PES_CARDS_PURGED') === 'true') {
+      this.cardsCache = [];
+      this.developmentsCache = [];
+      this.saveCardsToStorage();
+      this.saveDevelopmentsToStorage();
+      this.notifyCardsListeners();
+      this.notifyDevListeners();
+      this.initialized = true;
+      return;
+    }
+
+    // If cards database is empty, populate from initialCardsData if available
     if (this.cardsCache.length === 0) {
       if (Array.isArray(initialCardsData) && initialCardsData.length > 0) {
         this.cardsCache = initialCardsData as unknown as PlayerCard[];
@@ -85,22 +100,13 @@ export class PlayerCardDatabaseService {
       // fallback to current cache
     }
 
-    if (this.cardsCache.length === 0) {
-      await this.syncCardsDatabase();
-    }
-
-    // If developments are empty, seed with initial featured builds
-    if (this.developmentsCache.length === 0) {
-      await this.seedInitialDevelopments();
-    }
-
     this.initialized = true;
   }
 
   public validatePlayerCard(c: any): boolean {
-    if (!c || c.source !== 'eFHUB') return false;
+    if (!c || (c.source !== 'eFHUB' && c.source !== 'eFootBase')) return false;
     if (typeof c.id === 'string' && (c.id.includes('pesmaster') || c.id.includes('eflab') || c.id.includes('efhub-messi-105') || c.id.includes('efhub-messi-106') || c.id.includes('efhub-messi-100'))) return false;
-    if (!c.cardImageUrl || !c.cardImageUrl.startsWith('https://efimg.com/')) return false;
+    if (!c.cardImageUrl || (!c.cardImageUrl.startsWith('https://efimg.com/') && !c.cardImageUrl.startsWith('https://cdn.assets.efootbase.com/') && !c.cardImageUrl.includes('efootbase.com'))) return false;
     if (typeof c.maxOverall !== 'number' || c.maxOverall < 50 || c.maxOverall > 120) return false;
     if (!c.cardId || typeof c.cardId !== 'string') return false;
 
@@ -182,6 +188,22 @@ export class PlayerCardDatabaseService {
 
   private notifyDevListeners() {
     this.devListeners.forEach(listener => listener([...this.developmentsCache]));
+  }
+
+  public clearAllDevelopments() {
+    this.developmentsCache = [];
+    this.saveDevelopmentsToStorage();
+    this.notifyDevListeners();
+  }
+
+  public clearAllCards() {
+    this.cardsCache = [];
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('PES_CARDS_PURGED', 'true');
+      localStorage.removeItem(CARDS_STORAGE_KEY);
+    }
+    this.saveCardsToStorage();
+    this.notifyCardsListeners();
   }
 
   // =========================================================================
@@ -351,6 +373,9 @@ export class PlayerCardDatabaseService {
    * Enforces de-duplication before saving.
    */
   async saveCard(cardData: Omit<PlayerCard, 'id' | 'createdAt' | 'lastUpdated'> & { id?: string; cardId?: string }): Promise<PlayerCard> {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('PES_CARDS_PURGED');
+    }
     const targetId = cardData.cardId || cardData.id;
     const dedupKey = `${cardData.source}_${cardData.sourceCardId}_${cardData.sourceVersion}`.toLowerCase();
     
@@ -935,8 +960,9 @@ export class PlayerCardDatabaseService {
 
     for (const conf of seedConfigs) {
       if (!conf.card) continue;
-      const statsCalc = calculateProgressionStats(conf.card, conf.points, true);
-      const usedPoints = calculateUsedPoints(conf.points);
+      const pointsToUse = conf.card.progressionPoints || conf.points;
+      const statsCalc = calculateProgressionStats(conf.card, pointsToUse, true);
+      const usedPoints = calculateUsedPoints(pointsToUse);
       const availablePoints = calculateAvailablePoints(conf.card);
       const now = new Date().toISOString();
 
@@ -959,14 +985,14 @@ export class PlayerCardDatabaseService {
           sourceCardId: conf.card.sourceCardId,
           lastUpdated: conf.card.lastUpdated
         },
-        title: conf.title,
+        title: `تطويرة ${conf.card.playerName} (${conf.card.maxOverall} OVR)`,
         description: conf.description,
         role: conf.role,
         position: conf.position,
-        developmentPoints: conf.points,
+        developmentPoints: pointsToUse,
         usedPoints,
         availablePoints,
-        finalOverall: statsCalc.finalOverall,
+        finalOverall: conf.card.maxOverall || statsCalc.finalOverall,
         statsBefore: statsCalc.statsBefore,
         statsAfter: statsCalc.statsAfter,
         statChanges: statsCalc.statChanges,

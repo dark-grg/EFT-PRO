@@ -8,6 +8,14 @@ import { jsonResponse, errorResponse } from './utils/response';
 import { handleAnalyzeFormation } from './routes/formation';
 import { handleGetTime, handleGetWheelStatus, handlePostWheelSpin, handleGetWheelPrizes } from './routes/wheel';
 import { handleGetPlayerCards, handlePostEfhubParse, handlePostResyncPlayers } from './routes/players';
+import { 
+  handleGetPlayerDevelopments, 
+  handleGetPlayerDevelopmentById, 
+  handlePostPlayerDevelopment, 
+  handlePutPlayerDevelopment, 
+  handleDeletePlayerDevelopment, 
+  handleUploadPlayerImage 
+} from './routes/playerDevelopments';
 
 // Export Durable Object class for Cloudflare Worker runtime binding
 export { WheelDurableObject } from './durable-objects/WheelDurableObject';
@@ -72,12 +80,60 @@ export default {
         return errorResponse('Method Not Allowed', 405, request);
       }
 
-      // 6. Player Cards endpoints
-      if (pathname === '/api/players/cards') {
+      // 6. Player Developments endpoints
+      if (pathname === '/api/player-developments') {
         if (request.method === 'GET') {
-          return await handleGetPlayerCards(request, env);
+          return await handleGetPlayerDevelopments(request, env);
         }
         return errorResponse('Method Not Allowed', 405, request);
+      }
+
+      if (pathname === '/api/admin/player-developments') {
+        if (request.method === 'POST') {
+          return await handlePostPlayerDevelopment(request, env);
+        }
+        return errorResponse('Method Not Allowed', 405, request);
+      }
+
+      if (pathname === '/api/admin/player-developments/upload') {
+        if (request.method === 'POST') {
+          return await handleUploadPlayerImage(request, env);
+        }
+        return errorResponse('Method Not Allowed', 405, request);
+      }
+
+      // Dynamic ID routes: /api/player-developments/:id or /api/admin/player-developments/:id
+      const devIdMatch = pathname.match(/^\/api\/(?:admin\/)?player-developments\/([^\/]+)$/);
+      if (devIdMatch && devIdMatch[1]) {
+        const id = devIdMatch[1];
+        if (request.method === 'GET') {
+          return await handleGetPlayerDevelopmentById(request, env, id);
+        }
+        if (request.method === 'PUT') {
+          return await handlePutPlayerDevelopment(request, env, id);
+        }
+        if (request.method === 'DELETE') {
+          return await handleDeletePlayerDevelopment(request, env, id);
+        }
+        return errorResponse('Method Not Allowed', 405, request);
+      }
+
+      // Serve uploaded images from R2 if configured
+      const imageMatch = pathname.match(/^\/api\/images\/([^\/]+)$/);
+      if (imageMatch && imageMatch[1]) {
+        const filename = imageMatch[1];
+        if (env.IMAGES_BUCKET) {
+          const fileObj = await env.IMAGES_BUCKET.get(filename);
+          if (!fileObj) {
+            return errorResponse('Image not found', 404, request);
+          }
+          const headers = new Headers();
+          fileObj.writeHttpMetadata(headers);
+          headers.set('etag', fileObj.httpEtag);
+          headers.set('Access-Control-Allow-Origin', '*');
+          return new Response(fileObj.body, { headers });
+        }
+        return errorResponse('Image storage not configured', 404, request);
       }
 
       if (pathname === '/api/efhub/parse') {
