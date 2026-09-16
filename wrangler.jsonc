@@ -22,6 +22,33 @@
       ]
     }
   ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "eft-pro-db",
+      "database_id": "eft-pro-db-id"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "IMAGES_BUCKET",
+      "bucket_name": "eft-pro-images"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "WHEEL_STORE",
+      "id": "wheel_store_id"
+    },
+    {
+      "binding": "PLAYERS_STORE",
+      "id": "players_store_id"
+    },
+    {
+      "binding": "PLAYER_DEVELOPMENTS_STORE",
+      "id": "player_developments_store_id"
+    }
+  ],
   "observability": {
     "enabled": true
   }
