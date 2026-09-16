@@ -150,32 +150,6 @@ export const AlRashdawiPortal: React.FC = () => {
               <ExternalLink size={14} className="group-hover:translate-x-[-2px] transition-transform" />
             </div>
           </a>
-
-          {/* Facebook Link */}
-          <a
-            href="https://www.facebook.com/share/19myxoXjBb/?mibextid=wwXIfr"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-indigo-600/20 to-blue-600/10 hover:from-indigo-600/30 hover:to-blue-600/20 border border-indigo-500/40 transition-all group shadow-md"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#1877F2] text-white flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform font-black text-xl">
-                f
-              </div>
-              <div className="flex flex-col text-right">
-                <span className="text-xs font-black text-white group-hover:text-indigo-300 transition-colors">
-                  رابط الفيسبوك
-                </span>
-                <span className="text-[11px] text-indigo-300 font-bold">
-                  الصفحة الرسمية للرشداوي
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-indigo-300 font-bold">
-              <span>زيارة الصفحة</span>
-              <ExternalLink size={14} className="group-hover:translate-x-[-2px] transition-transform" />
-            </div>
-          </a>
         </div>
 
         {/* Fast Action to Wheel of Fortune */}
