@@ -13,7 +13,7 @@ import { AlRashdawiPortal } from './pages/AlRashdawiPortal';
 import { PlayerBuilds } from './pages/PlayerBuilds';
 import { Managers } from './pages/Managers';
 import { AdminDashboard } from './pages/AdminDashboard';
-import { OwnerPlayerDevelopments } from './pages/OwnerPlayerDevelopments';
+
 import { LagRemover } from './pages/LagRemover';
 import { Tactics } from './pages/Tactics';
 import { UsersStats } from './pages/UsersStats';
@@ -69,8 +69,7 @@ function AppContent() {
           <Route path="/managers" element={<Managers />} />
           <Route path="/coaches" element={<Managers />} />
           <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/owner/player-developments" element={<OwnerPlayerDevelopments />} />
-          <Route path="/admin/player-developments" element={<OwnerPlayerDevelopments />} />
+
           <Route path="/lag-remover" element={<LagRemover />} />
           <Route path="/boost" element={<LagRemover />} />
           <Route path="/anti-lag" element={<LagRemover />} />
